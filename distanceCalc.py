@@ -5,8 +5,10 @@ import cv2
 import matplotlib.pyplot as plt
 #%matplotlib inline
 
-def calculateAndMap(raw_image,coordinates):
 
+# calculate distance between roi (extracted centroid coordinate) and objects
+# plots the output as a scatter map and overlays it on the given image
+def calculateAndMap(raw_image,coordinates):
 
     image=cv2.imread(raw_image)
     image=cv2.resize(image,(640,480))

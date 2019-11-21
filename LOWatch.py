@@ -17,7 +17,8 @@ w = video.get(cv2.CAP_PROP_FRAME_WIDTH)
 h = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
 fourcc = cv2.VideoWriter_fourcc(*'MJPG')
 
-
+# detect person in the frame and mark the ROI using a rectangle frame
+# return final frame and ROI coordinates
 def personDetector(fimage):
     coordinates = []
     frame = cv2.resize(fimage, (640, 480))
@@ -41,10 +42,13 @@ def personDetector(fimage):
     
     return (frame, coordinates)
 
+
+# save image and video on a given time interval $
+# return ROI coordinates
 def startWatching(start_time):
     t = time.localtime()
     starttimestamp = time.strftime('%b-%d-%Y_%H%M%S', t)
-    out = cv2.VideoWriter('/Users/sanjivjha/Desktop/Occupancy&Usage monitor/video/output'+starttimestamp+'.avi', fourcc, 30, (int(w),int(h)))
+    out = cv2.VideoWriter('output'+starttimestamp+'.avi', fourcc, 30, (int(w),int(h)))
 
     while (int(time.time() - start_time) < capture_duration ):
         video=cv2.VideoCapture(0)
@@ -61,7 +65,7 @@ def startWatching(start_time):
             break 
 
     (showPic, coordinates)=personDetector(frame)
-    cv2.imwrite('/Users/sanjivjha/Desktop/Occupancy&Usage monitor/images/newCapture'+starttimestamp+'.jpg',showPic)
+    cv2.imwrite('newCapture'+starttimestamp+'.jpg',showPic)
     out.release()
     video.release()
     #implot=plt.imshow(showPic)
