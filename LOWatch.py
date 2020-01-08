@@ -114,7 +114,7 @@ def headDetection(fimage):
             yC=(box_y+box_height)/2 -box_y/2
             coordinates.append((xC, yC))
             cv2.rectangle(fimage, (int(box_x), int(box_y)), (int(box_width), int(box_height)), (23, 230, 210), thickness=1)
-            cv2.putText(fimage,str(float(detection[2])*100)+'%'+''+class_name ,(int(box_x), int(box_y+.02*image_height)),cv2.FONT_HERSHEY_SIMPLEX,(1),(0, 0, 255))
+            cv2.putText(fimage,str(round((float(detection[2])*100),2))+'%'+''+class_name ,(int(box_x), int(box_y+.02*image_height)),cv2.FONT_HERSHEY_SIMPLEX,(1),(0, 0, 255))
     
     return (fimage,coordinates)
 
