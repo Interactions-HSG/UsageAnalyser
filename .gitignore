@@ -1,0 +1,10 @@
+_pycache_/
+.vscode/
+.DS_Store/
+.DS_Store
+_pycache_
+.vscode
+*.pyc
+output/
+images/
+svm/
