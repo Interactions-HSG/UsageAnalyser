@@ -8,5 +8,3 @@ def scheduler():
         # return coordinates
         coordinate=startWatching(time.time())
         return coordinate
-        # device goes to sleep after 2 minutes 60*2 of data gathering
-        sleep(60*1)
