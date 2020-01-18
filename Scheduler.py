@@ -6,5 +6,5 @@ def scheduler():
     while True:
         # imported function for person detection and image/video saving
         # return coordinates
-        coordinate=startWatching(time.time())
-        return coordinate
+        (changeCoordinates,personCoordinates)=startWatching(time.time())
+        return (changeCoordinates,personCoordinates)
