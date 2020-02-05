@@ -4,12 +4,14 @@ import time
 import imutils
 import config
 import tfdetect as tf
+from random import seed
+from random import randint
 
-
+'''
 hog = cv2.HOGDescriptor()
 hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 face_cascade = cv2.CascadeClassifier(config.faceClassifierAddress)
-
+'''
 capture_duration = config.captureDuration
 firstFrame = None
 coordinates = []
@@ -69,7 +71,7 @@ def changeDetection(fimage, firstImage):
     frameDelta = cv2.absdiff(backgroundModelresized, frame)
     gray = cv2.cvtColor(frameDelta, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (5, 5), 0)
-    thresh = cv2.threshold(blur, 20, 255, cv2.THRESH_BINARY)[1]
+    thresh = cv2.threshold(blur, config.changeThreshold, 255, cv2.THRESH_BINARY)[1]
     thresh = cv2.dilate(thresh, None, iterations=3)
     cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
                             cv2.CHAIN_APPROX_SIMPLE)
@@ -80,13 +82,12 @@ def changeDetection(fimage, firstImage):
 
         (x, y, w, h) = cv2.boundingRect(c)
 
-        if cv2.contourArea(c) < 700:
+        if ((w < config.changeAreaMin and h < config.changeAreaMin)or(w > config.changeAreaMax and h > config.changeAreaMax)):
             continue
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         # cv2.drawContours(frame,[c],-1,(0,255,0),2)
         status = 1
 
-        
         #xC=(x+(x+w))/2
         #yC=(y+(y+h))/2 -y/2
         #changeCoordinates.append([xC, yC])
@@ -100,9 +101,8 @@ def changeDetection(fimage, firstImage):
         # personCoordinates.append(coordinate)
         # if(object_name=="person"):
         # personDectected=1
-    return (frame, changeCoordinates, personCoordinates, status, personDectected)
-
-
+    #return (frame, changeCoordinates, personCoordinates, status, personDectected)
+    return (frame, changeCoordinates, status)
 
 # DNN used for people head detection
 classNames = {
@@ -159,7 +159,9 @@ def decision(personDetected, status):
     elif(personDetected == 0 and status == 1):
         Occupancy = 2
     elif(status == 0 and personDetected == 0):
-        Occupancy = 3       
+        Occupancy = 3 
+    elif(status== 0 and personDetected == 1):
+        Occupancy = 1   
     return Occupancy
 
 ''' save image and video on a given time interval $
@@ -169,39 +171,44 @@ def decision(personDetected, status):
 def startWatching(start_time):
     RoomStatus = 0
     personDectected = 0
+    personCoordinates.clear()
+    changeCoordinates.clear()
+    frameArray=[]
     t = time.localtime()
     video = cv2.VideoCapture(0)
     ww = video.get(cv2.CAP_PROP_FRAME_WIDTH)
     hw = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     starttimestamp = time.strftime('%b-%d-%Y_%H%M%S', t)
-    out = cv2.VideoWriter('{}outputVideo{}.avi'.format(config.outputPath,starttimestamp), fourcc, 34, (int(ww), int(hw)))
+    out = cv2.VideoWriter('{}outputVideo{}.avi'.format(config.outputPath,starttimestamp), fourcc, 10, (int(ww), int(hw)))
     check, firstFrame = video.read()
     firstFrame = cv2.GaussianBlur(firstFrame, config.blurrSize, 0)
     while (int(time.time() - start_time) < capture_duration):
         check, frame = video.read()
+        frameArray.append(frame)
         frame = cv2.GaussianBlur(frame, config.blurrSize, 0)
         if check == True:
             t = time.localtime()
             timestamp = time.strftime('%b-%d-%Y_%H%M%S', t)
+            '''
             faces = face_cascade.detectMultiScale(frame, 1.1, 4)
+            
             for (x, y, w, h) in faces:
                 roi_blur = frame[y:y+h, x:x+w]
                 blur = cv2.GaussianBlur(
                     roi_blur, (101, 101), cv2.BORDER_TRANSPARENT)
                 frame[y:y+h, x:x+w] = blur
-
-            (framedetect, changeCoordinates, personCoordinates,
-             RoomStatus, isPerson) = changeDetection(frame, firstFrame)
+            '''
+            (framedetect, change, RoomStatus) = changeDetection(frame, firstFrame)
 
             cv2.putText(framedetect, 'WorkSpace is:', (50, 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, (1), (0, 0, 255))
+                        cv2.FONT_HERSHEY_SIMPLEX, (0.5), (0, 0, 255))
             if RoomStatus == 0:
-                cv2.putText(framedetect, "Free", (275, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, (1), (0, 255, 0))
+                cv2.putText(framedetect, "Free", (200, 50),
+                            cv2.FONT_HERSHEY_SIMPLEX, (0.5), (0, 255, 0))
             else:
-                cv2.putText(framedetect, "Busy", (275, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, (1), (0, 0, 255))
+                cv2.putText(framedetect, "Busy", (200, 50),
+                            cv2.FONT_HERSHEY_SIMPLEX, (0.5), (0, 0, 255))
 
             cv2.putText(framedetect, timestamp, (50, 75),
                         cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0))
@@ -212,11 +219,16 @@ def startWatching(start_time):
                 break
         else:
             break
-
-    (frame, object_name, coordinate) = tf.detect(framedetect)
-    personCoordinates.append(coordinate)
-    if(object_name == "person"):
-        personDectected = 1
+    
+    if len(frameArray)>0:
+        seed(1)
+        
+        for _ in range(5):
+            i=randint(0,len(frameArray)-1)
+            (frame, object_name, coordinate) = tf.detect(frameArray[i])
+            personCoordinates.append(coordinate)
+            if(object_name == "person"):
+                personDectected = 1
     assert (RoomStatus==1 or RoomStatus==0), 'RoomStatus must be bool'
     occupancy = decision(personDectected, RoomStatus)
     #(showPic, coordinates)=personDetector(frame)
@@ -228,4 +240,4 @@ def startWatching(start_time):
     out.release()
     video.release()
     cv2.destroyAllWindows()
-    return (changeCoordinates, personCoordinates, occupancy)
+    return (change, personCoordinates, occupancy)

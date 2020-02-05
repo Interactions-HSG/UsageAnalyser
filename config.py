@@ -21,16 +21,25 @@ sleepDuration = 3600
 
 outputPath = r'output/'
 
+defaultDistance = 50
+changeThreshold =50
+changeAreaMin =50
+changeAreaMax =300
+
+
 modelFile = r'tflite_models/detect.tflite'
 labelPath = r'tflite_models/person-labelmap.txt'
 
 inputImageSize = (640, 480)
-blurrSize = (51, 51)
+blurrSize = (31, 31)
 
+roomBrightnessThreshold=50
 
 furnitureCoordinates = {
-    "table": {"x": 300, "y": 200, "w": 100, "h": 200},
-    "cupboard": {"x": 100, "y": 50, "w": 50, "h": 150}
+    "table": {"x": 250, "y": 130, "w": 180, "h": 108},
+    "whiteBoard": {"x": 320, "y": 350, "w": 150, "h": 150},
+    "glassBoard":{"x": 50, "y": 150, "w": 110, "h": 90}
+    
 }
 
 occupancy = {
@@ -49,6 +58,6 @@ yellow = 'y'
 black = 'k'
 white = 'w'
 
-googleDriveUploadAllowed = 1
+googleDriveUploadAllowed = 0
 
 testMode = 0

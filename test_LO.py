@@ -40,7 +40,7 @@ class TestLO(unittest.TestCase):
         LOWatch.changeDetection(self.fimage, self.firstImage)
 
     def test_decision(self):
-        self.assertEqual(LOWatch.decision(1, 0), 0)
+        self.assertEqual(LOWatch.decision(1, 0), 1)
         self.assertEqual(LOWatch.decision(1, 1), 1)
         self.assertEqual(LOWatch.decision(0, 1), 2)
         self.assertEqual(LOWatch.decision(0, 0), 3)
@@ -51,12 +51,14 @@ class TestLO(unittest.TestCase):
     '''distanceCal.py'''
 
     def test_distanceCalculator(self):
+        import distanceCalc
         distanceCalc.distanceCalculator(self.x1, self.y1, self.occupancy)
 
     def test_iterateNPlot(self):
         distanceCalc.iterateNplot(self.Coordinates, self.color)
 
     def test_calculateAndMap(self):
+        import distanceCalc
         distanceCalc.calculateAndMap(
             self.raw_image, self.changeCoordinates, self.personCoordinates, self.occupancy)
 
@@ -66,10 +68,7 @@ class TestLO(unittest.TestCase):
         LOUsageMapGenerator.createZip(self.name)
 
     def test_generateMap(self):
-        LOUsageMapGenerator.generateMap(self.raw_image)
-
-    def test_main(self):
-        LOUsageMapGenerator.main()
+        LOUsageMapGenerator.generateMap()
 
     '''googleUpload'''
 

@@ -14,14 +14,27 @@ num = 0
 
 countTable = {
 }
-
+def getSerial():
+  deviceID = "0000000000000000"
+  try:
+    f = open('/proc/cpuinfo','r')
+    for line in f:
+      if line[0:6]=='Serial':
+        deviceID = line[10:26]
+    f.close()
+  except:
+    deviceID = "ERROR000000000"
+ 
+  return deviceID
 
 def distanceCalculator(x1, y1, occupancy):
+    countTable.clear()
     for i in config.furnitureCoordinates:
         countTable.update({i: 0})
+  
     try:
         f = open('{}outputTable{}.csv'.format(config.outputPath,time.strftime('%b-%d-%Y_%H%M%S', time.localtime())), "w")
-        writer = csv.DictWriter(f, fieldnames=["Furniture_Type", "Usage_Count", "Occupancy"])
+        writer = csv.DictWriter(f, fieldnames=["Furniture_Type", "Usage_Count", "Occupancy","Device ID"])
         writer.writeheader()
         
     except Exception as e:
@@ -39,14 +52,14 @@ def distanceCalculator(x1, y1, occupancy):
         # print(x1,y1)
         for j in range(len(x1)):
             distance = math.sqrt(((x1[j]-xC)**2)+((y1[j]-yC)**2))
-            if (int(distance) < 200 or int(distance) < 300):
+            if (int(distance) < (config.defaultDistance+(w/2)) or int(distance) < (config.defaultDistance+(h/2))):
                 value = countTable[i]+1
                 countTable.update({i: value})
             else:
                 continue
-        writer.writerow({"Furniture_Type": i, "Usage_Count": value,
-                         "Occupancy": config.occupancy.get(occupancy)})
-
+        writer.writerow({"Furniture_Type": i, "Usage_Count": countTable[i],
+                         "Occupancy": config.occupancy.get(occupancy),"Device ID":getSerial()})
+    
     f.close()
 
 def iterateNplot(Coordinates, color):
@@ -102,9 +115,15 @@ def calculateAndMap(raw_image, changeCoordinates, personCoordinates, occupancy):
     for i in config.furnitureCoordinates:
         cv2.putText(image,"{}: {}".format(i,countTable[i]), (50, 80+count), cv2.FONT_HERSHEY_SIMPLEX, (1), (255, 255, 255))
         count += 20
-
+        
+    
     implot = plt.imshow(image)
     # plt.hist2d(coordinates_x,coordinates_y)
     plt.savefig('{}outputGraph{}.png'.format(config.outputPath,time.strftime('%b-%d-%Y_%H%M%S', time.localtime())), bbox_inches='tight')
     #plt.show()
     plt.close('all')
+   
+    
+
+
+
