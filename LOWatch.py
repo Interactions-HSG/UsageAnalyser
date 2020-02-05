@@ -171,7 +171,7 @@ def decision(personDetected, status):
 def startWatching(start_time):
     RoomStatus = 0
     personDectected = 0
-    personCoordinates.clear()
+    
     changeCoordinates.clear()
     frameArray=[]
     t = time.localtime()
@@ -222,7 +222,7 @@ def startWatching(start_time):
     
     if len(frameArray)>0:
         seed(1)
-        
+        personCoordinates.clear()
         for _ in range(5):
             i=randint(0,len(frameArray)-1)
             (frame, object_name, coordinate) = tf.detect(frameArray[i])
