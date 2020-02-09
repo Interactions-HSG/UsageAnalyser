@@ -1,113 +1,124 @@
-from Scheduler import scheduler
-from distanceCalc import calculateAndMap,getSerial
-from time import sleep
 import time
-import config
-import numpy as np
-import cv2
-import os
 import zipfile
 import logging
+import csv
+import os
+import cv2
+import numpy as np
 from googleUpload import upload_files
+import Record
+import config
+from distanceCalc import calculate_and_map, get_serial
 
 
-
-def createZip(name):
-    filter=lambda name: '.zip' in name or '.DS_Store' in name
+def create_zip(name):
+    """create zip file for the final output"""
+    def filter(name): return '.zip' in name or '.DS_Store' in name
     try:
-        with zipfile.ZipFile('{}.zip'.format(name), 'w', zipfile.ZIP_DEFLATED) as zipObj:
-            for folderName, subfolders, filenames in os.walk(config.outputPath):
+        with zipfile.ZipFile('{}.zip'.format(name), 'w', zipfile.ZIP_DEFLATED) as zip_obj:
+            for folder_name, subfolders, filenames in os.walk(config.OUTPUT_PATH):
                 for filename in filenames:
                     if filter(filename):
                         continue
-                    filePath = os.path.join(folderName, filename)
-                    zipObj.write(filePath)
-                    if (lambda name: '.log' not in name)(filePath):
-                        os.remove(filePath)
+                    file_path = os.path.join(folder_name, filename)
+                    zip_obj.write(file_path)
+                    if (lambda name: '.log' not in name)(file_path):
+                        os.remove(file_path)
     except Exception as e:
         print(e)
         logging.debug(e)
 
-''' generates scatter map and overlays on the empty room image for better analysis by the users '''
-''' outputs found ROI coordinates and schedules the camera for reducing the battery life conservation '''
-def generateMap():
+
+def generate_map():
+    """ generates scatter map and overlays on the empty room image for better analysis by the users 
+     outputs found ROI coordinates and schedules the camera for reducing the battery life conservation """
+
     while True:
         ''' check room brightness '''
-        room_default_brightness = config.roomBrightnessThreshold
+
+        room_default_brightness = config.ROOM_BRIGHTNESS_THRESHOLD
         capture = cv2.VideoCapture(0)
-        _, rawImage = capture.read()
-        
-        for i in config.furnitureCoordinates:
-            x = config.furnitureCoordinates[i].get("x")
-            y = config.furnitureCoordinates[i].get("y")
-            w = config.furnitureCoordinates[i].get("w")
-            h = config.furnitureCoordinates[i].get("h")
+        _, raw_image = capture.read()
+
+        for i in config.FURNITURE_COORDINATES:
+            x = config.FURNITURE_COORDINATES[i].get("x")
+            y = config.FURNITURE_COORDINATES[i].get("y")
+            w = config.FURNITURE_COORDINATES[i].get("w")
+            h = config.FURNITURE_COORDINATES[i].get("h")
             xC = (x+w/2)
             yC = (y+h/2)
-            cv2.circle(rawImage, (int(xC), int(yC)), 1, (255, 255, 255), 1)
-            cv2.rectangle(rawImage, (x, y), (x + w, y + h), (255, 255, 255), 2)
-            cv2.putText(rawImage, i, (x, y), cv2.FONT_HERSHEY_COMPLEX,
+            cv2.circle(raw_image, (int(xC), int(yC)), 1, (255, 255, 255), 1)
+            cv2.rectangle(raw_image, (x, y), (x + w, y + h),
+                          (255, 255, 255), 2)
+            cv2.putText(raw_image, i, (x, y), cv2.FONT_HERSHEY_COMPLEX,
                         0.5, (255, 255, 255))
-        
-        config.inputImageSize=rawImage.shape[:-1][::-1]
-        hsv = cv2.cvtColor(rawImage, cv2.COLOR_BGR2HSV)
+
+        config.INPUT_IMAGE_SIZE = raw_image.shape[:-1][::-1]
+        hsv = cv2.cvtColor(raw_image, cv2.COLOR_BGR2HSV)
         avg_color_per_row = np.average(hsv, axis=0)
         avg_color = np.average(avg_color_per_row, axis=0)
         brightness = avg_color[2]
-        
-        rawImageRGB=cv2.cvtColor(hsv,cv2.COLOR_HSV2RGB)
-        
+        raw_image_RGB = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
+
         if brightness > room_default_brightness:
             capture.release()
             try:
-                
-                (changeCoordinates, personCoordinates, occupancy) = scheduler()
+
+                change = Record.start_recording(time.time())
                 # print(coordinates)
+
                 ''' imported function for calcuating the distance of a person from the objects '''
-                calculateAndMap(rawImageRGB, changeCoordinates,
-                                    personCoordinates, occupancy)
+                f = open('{}outputTable{}.csv'.format(config.OUTPUT_PATH, time.strftime(
+                    '%b-%d-%Y_%H%M%S', time.localtime())), "w")
+                writer = csv.DictWriter(f, fieldnames=[
+                    "Timestamp", "Furniture_Type", "Usage_Count", "Usage_Type", "Room_Occupancy", "Device_ID"])
+                writer.writeheader()
+                calculate_and_map(raw_image_RGB, change, writer)
+                f.close()
 
-                if(config.googleDriveUploadAllowed == 1):
-                        
-                    sleep(2)
-                    createZip('{}newRecording{}'.format(config.outputPath,getSerial()))
-                    fileMetaData = {'name': 'newRecording{}'.format(getSerial()), 'time': time.strftime(
-                                '%b-%d-%Y_%H%M%S', time.localtime())}
-                    results = upload_files('{}newRecording{}'.format(config.outputPath,getSerial()), fileMetaData)
+                if(config.GOOGLE_DRIVE_UPLOAD_ALLOWED == 1):
+
+                    time.sleep(2)
+                    create_zip('{}newRecording{}'.format(
+                        config.OUTPUT_PATH, get_serial()))
+                    file_meta_data = {'name': 'newRecording{}'.format(get_serial()), 'time': time.strftime(
+                        '%b-%d-%Y_%H%M%S', time.localtime())}
+                    results = upload_files('{}newRecording{}'.format(
+                        config.OUTPUT_PATH, get_serial()), file_meta_data)
                     print('File uploaded ID: {}'.format(results.get('id')))
-                    logging.info('Files uploaded ID: {}'.format(results.get('id')))
-                        
+                    logging.info(
+                        'Files uploaded ID: {}'.format(results.get('id')))
 
-                    ''' device goes to sleep '''
-                if config.testMode==0:
-                    sleep(config.sleepDuration)
-                else:
-                    logging.info('testing!!! please set testMode to 0 in configuration file for full mode...')
-                    break
             except Exception as e:
                 print(e)
                 logging.debug(e)
 
+            if config.TEST_MODE == 1:
+                logging.info(
+                    'testing!!! please set testMode to 0 in configuration file for full mode...')
+                break
+
         else:
-            
             capture.release()
             print('The room is too dark for a photo!')
-            logging.info('The room is too dark for a photo {}!'.format(time.strftime('%b-%d-%Y_%H%M%S', time.localtime())))
-            if config.testMode==0:
-                sleep(config.sleepDuration)
+            logging.info('The room is too dark for a photo {}!'.format(
+                time.strftime('%b-%d-%Y_%H%M%S', time.localtime())))
+            if config.TEST_MODE == 0:
+                time.sleep(config.SLEEP_DURATION)
             else:
-                logging.info('testing!!! please set testMode to 0 in configuration file for full mode...')
-                
-                break
-        #capture.release()
-    
-        
-def main(): 
-    # raw_pic=config.rawImagePath
-    logging.basicConfig(filename=
-                        '{}LOWatch.log'.format(config.outputPath), level=logging.DEBUG)
+                logging.info(
+                    'testing!!! please set testMode to 0 in configuration file for full mode...')
 
-    generateMap()
+                break
+        # capture.release()
+
+
+def main():
+    """main function"""
+    logging.basicConfig(filename='{}LOWatch.log'.format(
+        config.OUTPUT_PATH), level=logging.DEBUG)
+    generate_map()
+
 
 if __name__ == "__main__":
     main()

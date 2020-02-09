@@ -1,63 +1,65 @@
+"""Config.py"""
 
 from pathlib import Path
-home = str(Path.home())
+HOME= str(Path.home())
 
-frozenInferenceGraph = r'pre-trained-set/frozen_inference_graph.pb'
-trainNodeDescription = r'pre-trained-set/output.pbtxt'
+RAW_IMAGE_PATH = r'images/61-402layout.png'
 
-rawImagePath = r'images/61-402layout.png'
+WINDOW_SIZE = (8, 8)
 
-windowSize = (8, 8)
-
-imageResolution = (720, 1080)
-faceClassifierAddress = home + \
+IMAGE_RESOLUTION = (720, 1080)
+FACECLASSIFIER_ADDRESS = HOME + \
     r'/downloads/opencv-3.4/data/haarcascades/haarcascade_frontalface_default.xml'
 '''
 to run on raspberry pi uncomment the line below 'saved opencv-3.4.0 folder inside the local folder'
 '''
-#faceClassifierAddress= r'opencv-3.4.0/data/haarcascades/haarcascade_frontalface_default.xml'
-captureDuration = 120
-sleepDuration = 3600
+#FACECLASSIFIER_ADDRESS= r'opencv-3.4.0/data/haarcascades/haarcascade_frontalface_default.xml'
+CAPTURE_DURATION = 43200
+SLEEP_DURATION = 900
 
-outputPath = r'output/'
+OUTPUT_PATH = r'output/'
+INPUT_PATH = r'input/'
 
-defaultDistance = 50
-changeThreshold =50
-changeAreaMin =50
-changeAreaMax =300
+DEFAULT_DISTANCE = 50
+CHNGAE_THRESHOLD = 50
+CHNAGE_AREA_MIN = 50
+CHANGE_AREA_MAX = 300
 
 
-modelFile = r'tflite_models/detect.tflite'
-labelPath = r'tflite_models/person-labelmap.txt'
+MODEL_FILE = r'tflite_models/detect.tflite'
+LABEL_PATH = r'tflite_models/person-labelmap.txt'
 
-inputImageSize = (640, 480)
-blurrSize = (31, 31)
+INPUT_IMAGE_SIZE = (640, 480)
+BLURR_SIZE = (31, 31)
 
-roomBrightnessThreshold=50
+ROOM_BRIGHTNESS_THRESHOLD = 50
 
-furnitureCoordinates = {
+FURNITURE_COORDINATES = {
     "table": {"x": 250, "y": 130, "w": 180, "h": 108},
     "whiteBoard": {"x": 320, "y": 350, "w": 150, "h": 150},
     "glassBoard":{"x": 50, "y": 150, "w": 110, "h": 90}
     
 }
 
-occupancy = {
-    0: "unknown",
+USAGE = {
     1: "Warm",
-    2: "Cold",
-    3: "Free"
+    2: "Cold"
 }
 
-blue = 'b'
-green = 'g'
-red = 'r'
-cyan = 'c'
-magenta = 'm'
-yellow = 'y'
-black = 'k'
-white = 'w'
+OCCUPANCY = {
+    0: "Free",
+    1: "Busy"  
+}
 
-googleDriveUploadAllowed = 0
+BLUE = 'b'
+GREEN = 'g'
+RED = 'r'
+CYAN = 'c'
+MAGENTA = 'm'
+YELLOW = 'y'
+BLACK = 'k'
+WHITE = 'w'
 
-testMode = 0
+GOOGLE_DRIVE_UPLOAD_ALLOWED = 0
+
+TEST_MODE= 0
