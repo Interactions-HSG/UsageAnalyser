@@ -3,8 +3,9 @@ import math
 import cv2
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
+import numpy as np
 import config
-
+from furniture import furniture
 
 COUNTER = 0
 NUM = 0
@@ -25,7 +26,7 @@ def get_serial():
             if line[0:6] == 'Serial':
                 device_ID = line[10:26]
         f.close()
-    except:
+    except OSError:
         device_ID = "ERROR000000000"
 
     return device_ID
@@ -59,18 +60,25 @@ def distance_calculator(x1, y1, usage_type, writer):
         occupancy = 1
 
     COUNT_TABLE.clear()
-    
-    for i in config.FURNITURE_COORDINATES:
-        COUNT_TABLE.update({i: 0})
+    try:
+        for i in config.FURNITURE_NAMES:
+            COUNT_TABLE.update({i: 0})
 
-    value = 0
-    for i in config.FURNITURE_COORDINATES:
-        x2 = config.FURNITURE_COORDINATES[i].get("x")
-        y2 = config.FURNITURE_COORDINATES[i].get("y")
-        w = config.FURNITURE_COORDINATES[i].get("w")
-        h = config.FURNITURE_COORDINATES[i].get("h")
-        xC = x2+w/2
-        yC = y2+h/2
+        value = 0
+        
+        furniture_obj = furniture(config.FURNITURE_NAMES, config.FURNITURE_COORDINATES)
+        furniture_coordinates = furniture_obj.getCoordinateDict()
+        
+        for i in furniture_coordinates:
+            x2 = furniture_coordinates[i].get("x")
+            y2 = furniture_coordinates[i].get("y")
+            w = furniture_coordinates[i].get("w")
+            h = furniture_coordinates[i].get("h")
+            xC = x2+w/2
+            yC = y2+h/2
+    except Exception as e:
+        print(e)
+        return False
         # print(x1,y1)
         for j in range(len(x1)):
 
@@ -89,6 +97,7 @@ def distance_calculator(x1, y1, usage_type, writer):
         writer.writerow(
             {"Timestamp": time.strftime('%b-%d-%Y_%H%M%S', time.localtime()), "Furniture_Type": i, "Usage_Count": COUNT_TABLE[i], "Usage_Type": config.USAGE.get(usage_type), "Room_Occupancy": config.OCCUPANCY.get(occupancy), "Device_ID": get_serial()})
     
+    filtered_array = np.array(filtered_array)
     return filtered_array
 
 
@@ -113,6 +122,8 @@ def iterate(coordinates):
                 coordinates_y.append(y)
             else:
                 continue
+        coordinates_x = np.array(coordinates_x)
+        coordinates_y = np.array(coordinates_y) 
     return (coordinates_x, coordinates_y)
 
 
@@ -163,11 +174,11 @@ def calculate_and_map(raw_image, change, writer):
 
     ''' plot scatter plot of the persaon's positions in that pertiular time frame on the current/empty room image '''
     ''' create furniture regions on raw_pic '''
+    '''
     for i in config.FURNITURE_COORDINATES:
-        cv2.putText(image, "{}: {}".format(
-            i, COUNT_TABLE[i]), (50, 80+count), cv2.FONT_HERSHEY_SIMPLEX, (1), (255, 255, 255))
+        cv2.putText(image, "{}: {}".format(i, COUNT_TABLE[i]), (50, 80+count), cv2.FONT_HERSHEY_SIMPLEX, (1), (255, 255, 255))
         count += 20
-
+    '''
     implot = plt.imshow(image)
     # plt.hist2d(coordinates_x,coordinates_y)
     plt.savefig('{}outputGraph{}.png'.format(config.OUTPUT_PATH, time.strftime(

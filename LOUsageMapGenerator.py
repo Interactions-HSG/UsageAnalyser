@@ -9,7 +9,7 @@ from googleUpload import upload_files
 import Record
 import config
 from distanceCalc import calculate_and_map, get_serial
-
+from furniture import furniture
 
 def create_zip(name):
     """create zip file for the final output"""
@@ -40,11 +40,14 @@ def generate_map():
         capture = cv2.VideoCapture(0)
         _, raw_image = capture.read()
 
-        for i in config.FURNITURE_COORDINATES:
-            x = config.FURNITURE_COORDINATES[i].get("x")
-            y = config.FURNITURE_COORDINATES[i].get("y")
-            w = config.FURNITURE_COORDINATES[i].get("w")
-            h = config.FURNITURE_COORDINATES[i].get("h")
+        furniture_obj = furniture(config.FURNITURE_NAMES, config.FURNITURE_COORDINATES)
+        furniture_coordinates = furniture_obj.getCoordinateDict()
+        
+        for i in furniture_coordinates:
+            x = furniture_coordinates[i].get("x")
+            y = furniture_coordinates[i].get("y")
+            w = furniture_coordinates[i].get("w")
+            h = furniture_coordinates[i].get("h")
             xC = (x+w/2)
             yC = (y+h/2)
             cv2.circle(raw_image, (int(xC), int(yC)), 1, (255, 255, 255), 1)
@@ -97,6 +100,9 @@ def generate_map():
                 logging.info(
                     'testing!!! please set testMode to 0 in configuration file for full mode...')
                 break
+            
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
         else:
             capture.release()
@@ -111,6 +117,7 @@ def generate_map():
 
                 break
         # capture.release()
+        cv2.destroyAllWindows()
 
 
 def main():

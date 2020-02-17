@@ -3,14 +3,16 @@
 import time
 import cv2
 import imutils
+import numpy as np
 import config
  
   
 CHANGE_COORDINATES = []
 
 def change_detection(fimage, first_image):
-    ''' detect the biggest blobs and mark them down as highest probability of being a human being'''
+    ''' detect the chamges in the frame and return the change array'''
     status = 0
+    change_co = []
     if hasattr(fimage, 'shape'):
         config.INPUT_IMAGE_SIZE = fimage.shape[:-1][::-1]
     else:
@@ -43,37 +45,34 @@ def change_detection(fimage, first_image):
         xC = int((M["m10"] / M["m00"]))
         yC = int((M["m01"] / M["m00"]))
         CHANGE_COORDINATES.append([xC, yC])
-
-    return (frame, CHANGE_COORDINATES, status)
+        
+        change_co = np.array(CHANGE_COORDINATES)
+    return (frame, change_co, status)
 
 
 def start_recording(start_time):
     '''save image and video on a given time interval, returns ROI coordinates'''
     room_status = 0
-    person_dectected = 0
     CHANGE_COORDINATES.clear()
-    frame_array = []
     t = time.localtime()
     if config.TEST_MODE == 1:
         video = cv2.VideoCapture('input/input.avi')
     else:
-        video = cv2.VideoCapture()
+        video = cv2.VideoCapture(0)
     ww = video.get(cv2.CAP_PROP_FRAME_WIDTH)
     hw = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     starttimestamp = time.strftime('%b-%d-%Y_%H%M%S', t)
-    #out = cv2.VideoWriter('{}outputVideo{}.avi'.format(config.inputPath, starttimestamp), fourcc, 10, (int(ww), int(hw)))
+    out = cv2.VideoWriter('{}Video.avi{}'.format(config.OUTPUT_PATH, starttimestamp), fourcc, 34, (int(ww), int(hw)))
     try:
         check, first_frame = video.read()
     except Exception as e:
         print(e)
     first_frame = cv2.GaussianBlur(first_frame, config.BLURR_SIZE, 0)
     while (int(time.time() - start_time) < config.CAPTURE_DURATION):
-    #while (True):
         check, frame = video.read()
         if not check:
             break
-        frame_array.append(frame)
         frame = cv2.GaussianBlur(frame, config.BLURR_SIZE, 0)
         if check == True:
             t = time.localtime()
@@ -95,17 +94,13 @@ def start_recording(start_time):
                         cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0))
 
             cv2.imshow('LO-Watch', framedetect)
-            #out.write(framedetect)
+            out.write(framedetect)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         else:
             break
-            
-    cv2.putText(frame, "People: {}".format(person_dectected), (50, 100),
-                cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0))
 
-    cv2.imwrite('{}outputPicture{}.png'.format(config.OUTPUT_PATH, starttimestamp), person_dectected)
-    #out.release()
+    cv2.imwrite('{}outputPicture{}.png'.format(config.OUTPUT_PATH, starttimestamp), framedetect)
+    out.release()
     video.release()
-    cv2.destroyAllWindows()
     return change
