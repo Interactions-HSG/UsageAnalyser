@@ -50,7 +50,7 @@ def change_detection(fimage, first_image):
     return (frame, change_co, status)
 
 
-def start_recording(start_time):
+def start_recording(start_time, base_image=None):
     '''save image and video on a given time interval, returns ROI coordinates'''
     room_status = 0
     CHANGE_COORDINATES.clear()
@@ -64,10 +64,14 @@ def start_recording(start_time):
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     starttimestamp = time.strftime('%b-%d-%Y_%H%M%S', t)
     out = cv2.VideoWriter('{}Video.avi{}'.format(config.OUTPUT_PATH, starttimestamp), fourcc, 34, (int(ww), int(hw)))
-    try:
-        check, first_frame = video.read()
-    except Exception as e:
-        print(e)
+    if base_image is not None:
+        first_frame=base_image
+    else:
+        try:
+            check, first_frame = video.read()
+        except Exception as e:
+            print(e)
+            raise Exception(e)
     first_frame = cv2.GaussianBlur(first_frame, config.BLURR_SIZE, 0)
     while (int(time.time() - start_time) < config.CAPTURE_DURATION):
         check, frame = video.read()

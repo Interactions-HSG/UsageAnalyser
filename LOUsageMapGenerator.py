@@ -67,7 +67,7 @@ def generate_map():
             capture.release()
             try:
 
-                change = Record.start_recording(time.time())
+                change = Record.start_recording(time.time(), raw_image)
                 # print(coordinates)
 
                 ''' imported function for calcuating the distance of a person from the objects '''
