@@ -63,7 +63,7 @@ def start_recording(start_time, base_image=None):
     hw = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     starttimestamp = time.strftime('%b-%d-%Y_%H%M%S', t)
-    out = cv2.VideoWriter('{}Video.avi{}'.format(config.OUTPUT_PATH, starttimestamp), fourcc, 34, (int(ww), int(hw)))
+    out = cv2.VideoWriter('{}OutputVideo{}.avi'.format(config.OUTPUT_PATH, starttimestamp), fourcc, 34, (int(ww), int(hw)))
     if base_image is not None:
         first_frame=base_image
     else:

@@ -76,27 +76,29 @@ def distance_calculator(x1, y1, usage_type, writer):
             h = furniture_coordinates[i].get("h")
             xC = x2+w/2
             yC = y2+h/2
+    
+            for j in range(len(x1)):
+
+                distance = math.sqrt(math.pow((x1[j]-xC), 2)+math.pow((y1[j]-yC), 2))
+
+                if usage_type == 2:
+                    config.DEFAULT_DISTANCE = 0
+
+                if (int(distance) < (config.DEFAULT_DISTANCE+(w/2)) or int(distance) < (config.DEFAULT_DISTANCE+(h/2))):
+                    value = COUNT_TABLE[i]+1
+                    COUNT_TABLE.update({i: value})
+                    filtered_array.append((x1[j], y1[j]))
+                else:
+                    continue
+
+            writer.writerow(
+                {"Timestamp": time.strftime('%b-%d-%Y_%H%M%S', time.localtime()), "Furniture_Type": i, "Usage_Count": COUNT_TABLE[i], "Usage_Type": config.USAGE.get(usage_type), "Room_Occupancy": config.OCCUPANCY.get(occupancy), "Device_ID": get_serial()})
+        
     except Exception as e:
         print(e)
         return False
         # print(x1,y1)
-        for j in range(len(x1)):
-
-            distance = math.sqrt(math.pow((x1[j]-xC), 2)+math.pow((y1[j]-yC), 2))
-
-            if usage_type == 2:
-                config.DEFAULT_DISTANCE = 0
-
-            if (int(distance) < (config.DEFAULT_DISTANCE+(w/2)) or int(distance) < (config.DEFAULT_DISTANCE+(h/2))):
-                value = COUNT_TABLE[i]+1
-                COUNT_TABLE.update({i: value})
-                filtered_array.append((x1[j], y1[j]))
-            else:
-                continue
-
-        writer.writerow(
-            {"Timestamp": time.strftime('%b-%d-%Y_%H%M%S', time.localtime()), "Furniture_Type": i, "Usage_Count": COUNT_TABLE[i], "Usage_Type": config.USAGE.get(usage_type), "Room_Occupancy": config.OCCUPANCY.get(occupancy), "Device_ID": get_serial()})
-    
+        
     filtered_array = np.array(filtered_array)
     return filtered_array
 

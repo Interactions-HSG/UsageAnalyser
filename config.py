@@ -14,7 +14,7 @@ FACECLASSIFIER_ADDRESS = HOME + \
 to run on raspberry pi uncomment the line below 'saved opencv-3.4.0 folder inside the local folder'
 '''
 #FACECLASSIFIER_ADDRESS= r'opencv-3.4.0/data/haarcascades/haarcascade_frontalface_default.xml'
-CAPTURE_DURATION = 10800
+CAPTURE_DURATION = 120
 SLEEP_DURATION = 900
 
 OUTPUT_PATH = r'output/'
@@ -76,6 +76,6 @@ YELLOW = 'y'
 BLACK = 'k'
 WHITE = 'w'
 
-GOOGLE_DRIVE_UPLOAD_ALLOWED = 1
+GOOGLE_DRIVE_UPLOAD_ALLOWED = 0
 
 TEST_MODE= 0
