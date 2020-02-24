@@ -131,11 +131,16 @@ def iterate(coordinates):
 
 def start_plot(coordinates, color):
     """plot the line on graph"""
-    #plt.plot(coordinates_x, coordinates_y, 'ro', markerfacecolor=color)
-    for i in range(0, len(coordinates)-1):
-        (xC, yC) = coordinates[i]
-        (x1, y1) = coordinates[i+1]
-        newline((xC, yC), (x1, y1), color)
+    if color == config.BLUE:
+        (coordinates_x, coordinates_y) = iterate(coordinates)
+        plt.plot(coordinates_x, coordinates_y, 'ro', markerfacecolor=color)
+    elif color == config.RED:
+        for i in range(0, len(coordinates)-1):
+            (xC, yC) = coordinates[i]
+            (x1, y1) = coordinates[i+1]
+            newline((xC, yC), (x1, y1), color)
+    else:
+        return False
 
 
 ''' calculate distance between roi (extracted centroid coordinate) and objects
