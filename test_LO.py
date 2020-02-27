@@ -7,6 +7,7 @@ import csv
 import os
 import cv2
 import numpy as np
+import pytest
 import Record
 import distanceCalc
 import LOUsageMapGenerator

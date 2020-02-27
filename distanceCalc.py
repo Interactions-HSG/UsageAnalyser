@@ -68,7 +68,7 @@ def check_continuity(check_array, MOVING, STILL):
         else:
             MOVING.append(i)
     
-    for i in range(len(MOVING)):
+    for i in range(len(MOVING)-1):
         (xC, yC) = MOVING[i]
         (x1, y1) = MOVING[i+1]
         score = math.sqrt(math.pow(x1-xC, 2)+math.pow(y1-yC, 2))
@@ -167,14 +167,14 @@ def start_plot(coordinates, color):
     if color == config.BLUE:
         for i in range(len(coordinates)):
             count = np.count_nonzero(coordinates == i)
-            plt.plot(coordinates_x[i], coordinates_y[i], 'ro', markersize=1*count/10, markerfacecolor=color)
+            plt.plot(coordinates_x[i], coordinates_y[i], 'ro', markersize=1*count/100, markerfacecolor=color)
         
     elif color == config.RED:
         for i in range(0, len(coordinates)-1):
             (xC, yC) = coordinates[i]
             (x1, y1) = coordinates[i+1]
             distance = math.sqrt(math.pow((x1-xC), 2)+math.pow((y1-yC), 2))
-            if distance<10:
+            if distance<50:
                 newline((xC, yC), (x1, y1), color)
             else:
                 plt.plot(coordinates_x, coordinates_y, 'ro', markersize=2, markerfacecolor=color)
