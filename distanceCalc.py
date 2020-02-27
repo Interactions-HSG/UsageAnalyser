@@ -13,9 +13,6 @@ NUM = 0
 COUNT_TABLE = {
 }
 
-MOVING_COORDINATES = []
-STILL_COORDINATES = []
-
 def get_serial():
     """get serial number of the device"""
 
@@ -32,23 +29,58 @@ def get_serial():
     return device_ID
 
 
-def check_continuity(check_array):
+def check_continuity(check_array, MOVING, STILL):
     """check continuity in the detected changes"""
+    MOVING.clear()
+    STILL.clear()
+    """nearby_change=[]
+    
+    furniture_obj = furniture(config.FURNITURE_NAMES, config.FURNITURE_COORDINATES)
+    furniture_coordinates = furniture_obj.getCoordinateDict()
+    
+    for i in furniture_coordinates:
+        x2 = furniture_coordinates[i].get("x")
+        y2 = furniture_coordinates[i].get("y")
+        w = furniture_coordinates[i].get("w")
+        h = furniture_coordinates[i].get("h")
+        xC = x2+w/2
+        yC = y2+h/2
 
-    MOVING_COORDINATES.clear()
-    STILL_COORDINATES.clear()
-    for i in range(0, len(check_array)-1):
-        (xC, yC) = check_array[i]
-        (x1, y1) = check_array[i+1]
+        for j in range(len(check_array)):
+
+            distance = math.sqrt(math.pow((check_array[j][0]-xC), 2)+math.pow((check_array[j][1]-yC), 2))
+
+            if (int(distance) < (config.DEFAULT_DISTANCE+(w/2)) or int(distance) < (config.DEFAULT_DISTANCE+(h/2))):
+                
+                nearby_change.append(check_array[j])
+                
+            else:
+                continue
+            
+    nearby_change = np.array(nearby_change)"""
+    
+    
+    
+    for i in check_array:
+        count = np.count_nonzero(check_array == i)
+        if count>10:
+            STILL.append(i)
+        else:
+            MOVING.append(i)
+    
+    for i in range(len(MOVING)):
+        (xC, yC) = MOVING[i]
+        (x1, y1) = MOVING[i+1]
         score = math.sqrt(math.pow(x1-xC, 2)+math.pow(y1-yC, 2))
         if 5 < score < 150:
-            MOVING_COORDINATES.append((x1, y1))
+            MOVING.append([x1,y1])
         elif score < 5:
-            STILL_COORDINATES.append((x1, y1))
-
-    if(len(MOVING_COORDINATES) > 10):
-        return True
-    return False
+            STILL.append([x1,y1])
+                
+    MOVING = np.array(MOVING)
+    STILL = np.array(STILL)
+  
+    return (MOVING , STILL)
 
 
 def distance_calculator(x1, y1, usage_type, writer):
@@ -131,14 +163,21 @@ def iterate(coordinates):
 
 def start_plot(coordinates, color):
     """plot the line on graph"""
+    (coordinates_x, coordinates_y) = iterate(coordinates)
     if color == config.BLUE:
-        (coordinates_x, coordinates_y) = iterate(coordinates)
-        plt.plot(coordinates_x, coordinates_y, 'ro', markerfacecolor=color)
+        for i in range(len(coordinates)):
+            count = np.count_nonzero(coordinates == i)
+            plt.plot(coordinates_x[i], coordinates_y[i], 'ro', markersize=1*count/10, markerfacecolor=color)
+        
     elif color == config.RED:
         for i in range(0, len(coordinates)-1):
             (xC, yC) = coordinates[i]
             (x1, y1) = coordinates[i+1]
-            newline((xC, yC), (x1, y1), color)
+            distance = math.sqrt(math.pow((x1-xC), 2)+math.pow((y1-yC), 2))
+            if distance<10:
+                newline((xC, yC), (x1, y1), color)
+            else:
+                plt.plot(coordinates_x, coordinates_y, 'ro', markersize=2, markerfacecolor=color)
     else:
         return False
 
@@ -150,6 +189,8 @@ def start_plot(coordinates, color):
 def calculate_and_map(raw_image, change, writer):
     """map on the first image"""
     # image=cv2.imread(raw_image)
+    MOVING_COORDINATES = []
+    STILL_COORDINATES = []
     if hasattr(raw_image, 'shape'):
         config.INPUT_IMAGE_SIZE = raw_image.shape[:-1][::-1]
         image = cv2.resize(raw_image, config.INPUT_IMAGE_SIZE)
@@ -168,16 +209,16 @@ def calculate_and_map(raw_image, change, writer):
 
     ''' Furniture usage COUNTER '''
 
-    continuity = check_continuity(change)
-    if(continuity is True):
+    (MOVING_COORDINATES, STILL_COORDINATES) = check_continuity(change, MOVING_COORDINATES, STILL_COORDINATES)
+    if len(MOVING_COORDINATES)>10:
         (coordinates_x, coordinates_y) = iterate(
             MOVING_COORDINATES)
-        filtered_array = distance_calculator(coordinates_x, coordinates_y, 1, writer)
-        start_plot(filtered_array, config.RED)
+        filtered_array_warm = distance_calculator(coordinates_x, coordinates_y, 1, writer)
+        start_plot(filtered_array_warm, config.RED)
     (coordinates_x, coordinates_y) = iterate(
         STILL_COORDINATES)
-    filtered_array = distance_calculator(coordinates_x, coordinates_y, 2, writer)
-    start_plot(filtered_array, config.BLUE)
+    filtered_array_cold = distance_calculator(coordinates_x, coordinates_y, 2, writer)
+    start_plot(filtered_array_cold, config.BLUE)
 
     ''' plot scatter plot of the persaon's positions in that pertiular time frame on the current/empty room image '''
     ''' create furniture regions on raw_pic '''

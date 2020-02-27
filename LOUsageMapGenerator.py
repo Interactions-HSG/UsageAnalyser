@@ -32,13 +32,11 @@ def create_zip(name):
 def generate_map():
     """ generates scatter map and overlays on the empty room image for better analysis by the users 
      outputs found ROI coordinates and schedules the camera for reducing the battery life conservation """
-
+    capture = cv2.VideoCapture(0)
+    _, raw_image = capture.read()
+    room_default_brightness = config.ROOM_BRIGHTNESS_THRESHOLD
     while True:
         ''' check room brightness '''
-
-        room_default_brightness = config.ROOM_BRIGHTNESS_THRESHOLD
-        capture = cv2.VideoCapture(0)
-        _, raw_image = capture.read()
 
         furniture_obj = furniture(config.FURNITURE_NAMES, config.FURNITURE_COORDINATES)
         furniture_coordinates = furniture_obj.getCoordinateDict()

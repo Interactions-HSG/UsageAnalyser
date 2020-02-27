@@ -64,6 +64,7 @@ def start_recording(start_time, base_image=None):
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     starttimestamp = time.strftime('%b-%d-%Y_%H%M%S', t)
     out = cv2.VideoWriter('{}OutputVideo{}.avi'.format(config.OUTPUT_PATH, starttimestamp), fourcc, 34, (int(ww), int(hw)))
+    
     if base_image is not None:
         first_frame=base_image
     else:
@@ -72,6 +73,7 @@ def start_recording(start_time, base_image=None):
         except Exception as e:
             print(e)
             raise Exception(e)
+        
     first_frame = cv2.GaussianBlur(first_frame, config.BLURR_SIZE, 0)
     while (int(time.time() - start_time) < config.CAPTURE_DURATION):
         check, frame = video.read()
@@ -99,7 +101,7 @@ def start_recording(start_time, base_image=None):
 
             cv2.imshow('LO-Watch', framedetect)
             out.write(framedetect)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            if cv2.waitKey(60) & 0xFF == ord('q'):
                 break
         else:
             break
