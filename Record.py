@@ -56,7 +56,7 @@ def start_recording(start_time, base_image=None):
     CHANGE_COORDINATES.clear()
     t = time.localtime()
     if config.TEST_MODE == 1:
-        video = cv2.VideoCapture('input/input.avi')
+        video = cv2.VideoCapture(config.INPUT_PATH)
     else:
         video = cv2.VideoCapture(0)
     ww = video.get(cv2.CAP_PROP_FRAME_WIDTH)
@@ -101,7 +101,7 @@ def start_recording(start_time, base_image=None):
 
             cv2.imshow('LO-Watch', framedetect)
             out.write(framedetect)
-            if cv2.waitKey(60) & 0xFF == ord('q'):
+            if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         else:
             break

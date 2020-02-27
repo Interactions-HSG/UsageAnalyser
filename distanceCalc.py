@@ -165,19 +165,19 @@ def start_plot(coordinates, color):
     """plot the line on graph"""
     (coordinates_x, coordinates_y) = iterate(coordinates)
     if color == config.BLUE:
-        for i in range(len(coordinates)):
-            count = np.count_nonzero(coordinates == i)
-            plt.plot(coordinates_x[i], coordinates_y[i], 'ro', markersize=1*count/100, markerfacecolor=color)
+            plt.plot(coordinates_x, coordinates_y, 'ro', markersize=2, markerfacecolor=color)
         
     elif color == config.RED:
+        plt.plot(coordinates_x, coordinates_y, 'ro', markersize=2, markerfacecolor=color)
+        
         for i in range(0, len(coordinates)-1):
             (xC, yC) = coordinates[i]
             (x1, y1) = coordinates[i+1]
             distance = math.sqrt(math.pow((x1-xC), 2)+math.pow((y1-yC), 2))
             if distance<50:
                 newline((xC, yC), (x1, y1), color)
-            else:
-                plt.plot(coordinates_x, coordinates_y, 'ro', markersize=2, markerfacecolor=color)
+            
+        
     else:
         return False
 
