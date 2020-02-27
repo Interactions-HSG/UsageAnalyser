@@ -33,37 +33,13 @@ def check_continuity(check_array, MOVING, STILL):
     """check continuity in the detected changes"""
     MOVING.clear()
     STILL.clear()
-    """nearby_change=[]
     
-    furniture_obj = furniture(config.FURNITURE_NAMES, config.FURNITURE_COORDINATES)
-    furniture_coordinates = furniture_obj.getCoordinateDict()
-    
-    for i in furniture_coordinates:
-        x2 = furniture_coordinates[i].get("x")
-        y2 = furniture_coordinates[i].get("y")
-        w = furniture_coordinates[i].get("w")
-        h = furniture_coordinates[i].get("h")
-        xC = x2+w/2
-        yC = y2+h/2
-
-        for j in range(len(check_array)):
-
-            distance = math.sqrt(math.pow((check_array[j][0]-xC), 2)+math.pow((check_array[j][1]-yC), 2))
-
-            if (int(distance) < (config.DEFAULT_DISTANCE+(w/2)) or int(distance) < (config.DEFAULT_DISTANCE+(h/2))):
-                
-                nearby_change.append(check_array[j])
-                
-            else:
-                continue
-            
-    nearby_change = np.array(nearby_change)"""
     
     
     
     for i in check_array:
         count = np.count_nonzero(check_array == i)
-        if count>10:
+        if count>config.COLD_COUNT:
             STILL.append(i)
         else:
             MOVING.append(i)
@@ -74,8 +50,8 @@ def check_continuity(check_array, MOVING, STILL):
         score = math.sqrt(math.pow(x1-xC, 2)+math.pow(y1-yC, 2))
         if 5 < score < 150:
             MOVING.append([x1,y1])
-        elif score < 5:
-            STILL.append([x1,y1])
+        else:
+            continue
                 
     MOVING = np.array(MOVING)
     STILL = np.array(STILL)

@@ -16,6 +16,7 @@ to run on raspberry pi uncomment the line below 'saved opencv-3.4.0 folder insid
 #FACECLASSIFIER_ADDRESS= r'opencv-3.4.0/data/haarcascades/haarcascade_frontalface_default.xml'
 CAPTURE_DURATION = 120
 SLEEP_DURATION = 900
+COLD_COUNT=1000
 
 OUTPUT_PATH = r'output/'
 INPUT_PATH = r'input/OutputVideoFeb-25-2020_082009.avi'
