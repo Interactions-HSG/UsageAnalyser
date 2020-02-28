@@ -35,23 +35,18 @@ def check_continuity(check_array, MOVING, STILL):
     STILL.clear()
     
     
-    
-    
-    for i in check_array:
-        count = np.count_nonzero(check_array == i)
+    for i in range(len(check_array)-1):
+        
+        count = np.count_nonzero(check_array == check_array[i])
         if count>config.COLD_COUNT:
             STILL.append(i)
-        else:
-            MOVING.append(i)
-    
-    for i in range(len(MOVING)-1):
-        (xC, yC) = MOVING[i]
-        (x1, y1) = MOVING[i+1]
+        
+        (xC, yC) = check_array[i]
+        (x1, y1) = check_array[i+1]
         score = math.sqrt(math.pow(x1-xC, 2)+math.pow(y1-yC, 2))
         if 5 < score < 150:
             MOVING.append([x1,y1])
-        else:
-            continue
+        
                 
     MOVING = np.array(MOVING)
     STILL = np.array(STILL)
