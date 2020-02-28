@@ -71,8 +71,8 @@ class TestLO(unittest.TestCase):
         self.assertEqual(distanceCalc.iterate(self.coordinates)[1].all(), self.y1.all())
         
     def test_check_continuity(self):
-         self.assertEqual(distanceCalc.check_continuity(self.change, [], [])[0].all(),self.moving.all())
-         self.assertEqual(distanceCalc.check_continuity(self.change, [], [])[1].all(),self.still.all())
+         self.assertEqual(distanceCalc.check_continuity(self.change, [], [])[0].all(), self.moving.all())
+         self.assertEqual(distanceCalc.check_continuity(self.change, [], [])[1].all(), self.still.all())
 
     def test_calculateAndMap(self):
         distanceCalc.calculate_and_map(self.raw_image, self.change_coordinates, self.writer)

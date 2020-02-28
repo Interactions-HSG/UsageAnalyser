@@ -123,7 +123,8 @@ def generate_map():
 def main():
     """main function"""
     logging.basicConfig(filename='{}LOWatch.log'.format(
-        config.OUTPUT_PATH), level=logging.DEBUG)
+        config.OUTPUT_PATH),format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
+    datefmt='%Y-%m-%d:%H:%M:%S', level=logging.DEBUG)
     generate_map()
 
 

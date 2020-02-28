@@ -39,8 +39,7 @@ def check_continuity(check_array, MOVING, STILL):
         
         count = np.count_nonzero(check_array == check_array[i])
         if count>config.COLD_COUNT:
-            STILL.append(i)
-        
+            STILL.append(check_array[i])
         (xC, yC) = check_array[i]
         (x1, y1) = check_array[i+1]
         score = math.sqrt(math.pow(x1-xC, 2)+math.pow(y1-yC, 2))
