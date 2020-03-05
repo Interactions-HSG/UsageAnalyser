@@ -33,24 +33,29 @@ def check_continuity(check_array, MOVING, STILL):
     """check continuity in the detected changes"""
     MOVING.clear()
     STILL.clear()
-    
+    temp=[]
     
     for i in range(len(check_array)-1):
-        
-        count = np.count_nonzero(check_array == check_array[i])
-        if count>config.COLD_COUNT:
-            STILL.append(check_array[i])
         (xC, yC) = check_array[i]
-        (x1, y1) = check_array[i+1]
-        score = math.sqrt(math.pow(x1-xC, 2)+math.pow(y1-yC, 2))
-        if 5 < score < 150:
-            MOVING.append([x1,y1])
+        for j in range(i+1, len(check_array)-1):
+            (x1, y1) = check_array[j]
+            score = math.sqrt(math.pow(x1-xC, 2)+math.pow(y1-yC, 2))
+            if 5 < score < 150:
+                MOVING.append([x1,y1])
+            elif score == 0:
+                temp.append([x1,y1])
         
-                
+    if len(temp)>0:
+        for i in range(len(temp)-1):
+            temp = np.array(temp)
+            count = np.count_nonzero(temp == temp[i])
+            if count > config.COLD_COUNT:
+                STILL.append(temp[i])
+        
     MOVING = np.array(MOVING)
     STILL = np.array(STILL)
   
-    return (MOVING , STILL)
+    return (MOVING, STILL)
 
 
 def distance_calculator(x1, y1, usage_type, writer):
