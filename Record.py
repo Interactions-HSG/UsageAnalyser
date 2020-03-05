@@ -21,7 +21,10 @@ def change_detection(fimage, first_image):
         first_image = cv2.imread(first_image)
     background_model_resized = cv2.resize(first_image, config.INPUT_IMAGE_SIZE)
     frame = cv2.resize(fimage, config.INPUT_IMAGE_SIZE)
-    frame_delta = cv2.absdiff(background_model_resized, frame)
+    sharpen_kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+    sharpen_frame = cv2.filter2D(frame, -1, sharpen_kernel)
+    sharpen_background_model_resized = cv2.filter2D(background_model_resized, -1, sharpen_kernel)
+    frame_delta = cv2.absdiff(sharpen_background_model_resized, sharpen_frame)
     gray = cv2.cvtColor(frame_delta, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (5, 5), 0)
     thresh = cv2.threshold(blur, config.CHNGAE_THRESHOLD,

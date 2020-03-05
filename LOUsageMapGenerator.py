@@ -10,6 +10,7 @@ import Record
 import config
 from distanceCalc import calculate_and_map, get_serial
 from furniture import furniture
+from checkInternetConnection import connect
 
 def create_zip(name):
     """create zip file for the final output"""
@@ -79,8 +80,7 @@ def generate_map():
                 calculate_and_map(raw_image, change, writer)
                 f.close()
 
-                if(config.GOOGLE_DRIVE_UPLOAD_ALLOWED == 1):
-
+                if(config.GOOGLE_DRIVE_UPLOAD_ALLOWED == 1 and connect() == True):
                     time.sleep(2)
                     create_zip('{}newRecording{}'.format(
                         config.OUTPUT_PATH, get_serial()))
@@ -91,6 +91,8 @@ def generate_map():
                     print('File uploaded ID: {}'.format(results.get('id')))
                     logging.info(
                         'Files uploaded ID: {}'.format(results.get('id')))
+                elif(connect() == False):
+                    logging.info("Output files are being stored on local device because system is not connected to the internet!")
 
             except Exception as e:
                 print(e)
@@ -98,7 +100,7 @@ def generate_map():
 
             if config.TEST_MODE == 1:
                 logging.info(
-                    'testing!!! please set testMode to 0 in configuration file for full mode...')
+                    'Testing! please set testMode to 0 in configuration file for full mode...')
                 break
             
             if cv2.waitKey(1) & 0xFF == ord('q'):
