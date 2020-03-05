@@ -76,7 +76,7 @@ def generate_map():
                 writer = csv.DictWriter(f, fieldnames=[
                     "Timestamp", "Furniture_Type", "Usage_Count", "Usage_Type", "Room_Occupancy", "Device_ID"])
                 writer.writeheader()
-                calculate_and_map(raw_image_RGB, change, writer)
+                calculate_and_map(raw_image, change, writer)
                 f.close()
 
                 if(config.GOOGLE_DRIVE_UPLOAD_ALLOWED == 1):
