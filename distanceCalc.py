@@ -36,6 +36,19 @@ def check_continuity(check_array, MOVING, STILL):
     temp=[]
     
     for i in range(len(check_array)-1):
+        count = np.count_nonzero(check_array == check_array[i])
+        if count > config.COLD_COUNT:
+            STILL.append(check_array[i])
+        
+        (xC, yC) = check_array[i]
+        (x1, y1) = check_array[i+1]
+        score = math.sqrt(math.pow(x1-xC, 2)+math.pow(y1-yC, 2))
+        print(score)
+        if 5 < score < 150:
+            MOVING.append([x1,y1])
+        elif score == 0:
+            STILL.append([x1,y1])
+    '''for i in range(len(check_array)-1):
         (xC, yC) = check_array[i]
         for j in range(i+1, len(check_array)-1):
             (x1, y1) = check_array[j]
@@ -50,7 +63,7 @@ def check_continuity(check_array, MOVING, STILL):
             temp = np.array(temp)
             count = np.count_nonzero(temp == temp[i])
             if count > config.COLD_COUNT:
-                STILL.append(temp[i])
+                STILL.append(temp[i])'''
         
     MOVING = np.array(MOVING)
     STILL = np.array(STILL)
@@ -140,10 +153,10 @@ def start_plot(coordinates, color):
     """plot the line on graph"""
     (coordinates_x, coordinates_y) = iterate(coordinates)
     if color == config.BLUE:
-            plt.plot(coordinates_x, coordinates_y, 'ro', markersize=2, markerfacecolor=color)
+            plt.plot(coordinates_x, coordinates_y, 'ro', markersize=2, color=color)
         
     elif color == config.RED:
-        plt.plot(coordinates_x, coordinates_y, 'ro', markersize=2, markerfacecolor=color)
+        plt.plot(coordinates_x, coordinates_y, 'ro', markersize=2, color=color)
         
         for i in range(0, len(coordinates)-1):
             (xC, yC) = coordinates[i]
