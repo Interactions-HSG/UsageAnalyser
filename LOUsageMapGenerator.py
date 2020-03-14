@@ -1,3 +1,4 @@
+'''Start file and Output file generators'''
 import time
 import zipfile
 import logging
@@ -9,7 +10,7 @@ from googleUpload import upload_files
 import Record
 import config
 from distanceCalc import calculate_and_map, get_serial
-from furniture import furniture
+
 from checkInternetConnection import connect
 
 def create_zip(name):
@@ -35,49 +36,47 @@ def generate_map():
      outputs found ROI coordinates and schedules the camera for reducing the battery life conservation """
     capture1 = cv2.VideoCapture(0)
     _, raw_image = capture1.read()
+    (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
+
+    if int(major_ver)  < 3 :
+        fps = capture1.get(cv2.cv.CV_CAP_PROP_FPS)
+       
+    else :
+        fps = capture1.get(cv2.CAP_PROP_FPS)
+        
+    config.FPS=fps
+    logging.info("Start FPS: {}".format(fps))
     capture1.release()
     room_default_brightness = config.ROOM_BRIGHTNESS_THRESHOLD
+    
     while True:
         ''' check room brightness '''
         capture = cv2.VideoCapture(0)
         _,sample=capture.read()
-        furniture_obj = furniture(config.FURNITURE_NAMES, config.FURNITURE_COORDINATES)
-        furniture_coordinates = furniture_obj.getCoordinateDict()
-        
-        for i in furniture_coordinates:
-            x = furniture_coordinates[i].get("x")
-            y = furniture_coordinates[i].get("y")
-            w = furniture_coordinates[i].get("w")
-            h = furniture_coordinates[i].get("h")
-            xC = (x+w/2)
-            yC = (y+h/2)
-            cv2.circle(raw_image, (int(xC), int(yC)), 1, (255, 255, 255), 1)
-            cv2.rectangle(raw_image, (x, y), (x + w, y + h),
-                          (255, 255, 255), 2)
-            cv2.putText(raw_image, i, (x, y), cv2.FONT_HERSHEY_COMPLEX,
-                        0.5, (255, 255, 255))
 
         config.INPUT_IMAGE_SIZE = raw_image.shape[:-1][::-1]
-        hsv = cv2.cvtColor(sample, cv2.COLOR_BGR2HSV)
+        hsv = cv2.cvtColor(sample.copy(), cv2.COLOR_BGR2HSV)
         avg_color_per_row = np.average(hsv, axis=0)
         avg_color = np.average(avg_color_per_row, axis=0)
         brightness = avg_color[2]
-        raw_image_RGB = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
-
+        
+        
+        
         if brightness > room_default_brightness:
             capture.release()
             try:
 
-                change = Record.start_recording(time.time(), raw_image)
+                (change,count) = Record.start_recording(time.time(), raw_image)
                 # print(coordinates)
 
                 ''' imported function for calcuating the distance of a person from the objects '''
                 f = open('{}outputTable{}.csv'.format(config.OUTPUT_PATH, time.strftime(
                     '%b-%d-%Y_%H%M%S', time.localtime())), "w")
                 writer = csv.DictWriter(f, fieldnames=[
-                    "Timestamp", "Furniture_Type", "Usage_Count", "Usage_Type", "Room_Occupancy", "Device_ID"])
+                    "Timestamp", "Furniture_Type", "Usage_Count", "Total_Checks", "Usage_Percentage", "Usage_Type", "Room_Occupancy", "Device_ID"])
                 writer.writeheader()
-                calculate_and_map(raw_image, change, writer)
+                
+                calculate_and_map(raw_image, change, writer, count)
                 f.close()
 
                 if(config.GOOGLE_DRIVE_UPLOAD_ALLOWED == 1 and connect() == True):
@@ -132,3 +131,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

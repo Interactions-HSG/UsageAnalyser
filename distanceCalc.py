@@ -1,3 +1,4 @@
+'''Post processing calculations'''
 import time
 import math
 import cv2
@@ -33,7 +34,10 @@ def check_continuity(check_array, MOVING, STILL):
     """check continuity in the detected changes"""
     MOVING.clear()
     STILL.clear()
+    
     temp=[]
+    
+    
     
     for i in range(len(check_array)-1):
         count = np.count_nonzero(check_array == check_array[i])
@@ -43,35 +47,38 @@ def check_continuity(check_array, MOVING, STILL):
         (xC, yC) = check_array[i]
         (x1, y1) = check_array[i+1]
         score = math.sqrt(math.pow(x1-xC, 2)+math.pow(y1-yC, 2))
-        print(score)
+        
         if 5 < score < 150:
             MOVING.append([x1,y1])
-        elif score == 0:
-            STILL.append([x1,y1])
-    '''for i in range(len(check_array)-1):
-        (xC, yC) = check_array[i]
-        for j in range(i+1, len(check_array)-1):
-            (x1, y1) = check_array[j]
-            score = math.sqrt(math.pow(x1-xC, 2)+math.pow(y1-yC, 2))
-            if 5 < score < 150:
-                MOVING.append([x1,y1])
-            elif score == 0:
-                temp.append([x1,y1])
+    
+        elif score <=1:
+            temp.append([x1,y1])
+    
+    temp = np.array(temp)
+    
+    for i in range(len(temp)-1):
+        count = np.count_nonzero(temp == temp[i])
+        if count > config.COLD_COUNT:
+            STILL.append(temp[i])
         
+    
+    '''   
     if len(temp)>0:
         for i in range(len(temp)-1):
             temp = np.array(temp)
             count = np.count_nonzero(temp == temp[i])
             if count > config.COLD_COUNT:
-                STILL.append(temp[i])'''
-        
+                STILL.append(temp[i])
+    
+    '''
+                
     MOVING = np.array(MOVING)
     STILL = np.array(STILL)
   
-    return (MOVING, STILL)
+    return (MOVING , STILL)
 
 
-def distance_calculator(x1, y1, usage_type, writer):
+def distance_calculator(x1, y1, usage_type, writer, count):
     """calculate the distance between the change and the furniture"""
     occupancy = 0
     filtered_array = []
@@ -112,7 +119,7 @@ def distance_calculator(x1, y1, usage_type, writer):
                     continue
 
             writer.writerow(
-                {"Timestamp": time.strftime('%b-%d-%Y_%H%M%S', time.localtime()), "Furniture_Type": i, "Usage_Count": COUNT_TABLE[i], "Usage_Type": config.USAGE.get(usage_type), "Room_Occupancy": config.OCCUPANCY.get(occupancy), "Device_ID": get_serial()})
+                {"Timestamp": time.strftime('%b-%d-%Y_%H%M%S', time.localtime()), "Furniture_Type": i, "Usage_Count": COUNT_TABLE[i],"Total_Checks":count,"Usage_Percentage": round((COUNT_TABLE[i] / count)*100,2), "Usage_Type": config.USAGE.get(usage_type), "Room_Occupancy": config.OCCUPANCY.get(occupancy), "Device_ID": get_serial()})
         
     except Exception as e:
         print(e)
@@ -153,19 +160,16 @@ def start_plot(coordinates, color):
     """plot the line on graph"""
     (coordinates_x, coordinates_y) = iterate(coordinates)
     if color == config.BLUE:
-            plt.plot(coordinates_x, coordinates_y, 'ro', markersize=2, color=color)
+        plt.plot(coordinates_x, coordinates_y, 'ro', markersize=6, color=color)
         
     elif color == config.RED:
-        plt.plot(coordinates_x, coordinates_y, 'ro', markersize=2, color=color)
-        
         for i in range(0, len(coordinates)-1):
             (xC, yC) = coordinates[i]
             (x1, y1) = coordinates[i+1]
             distance = math.sqrt(math.pow((x1-xC), 2)+math.pow((y1-yC), 2))
             if distance<50:
                 newline((xC, yC), (x1, y1), color)
-            
-        
+        plt.plot(coordinates_x, coordinates_y, 'ro', markersize=2, color=color)
     else:
         return False
 
@@ -174,7 +178,7 @@ def start_plot(coordinates, color):
  plots the output as a scatter map and overlays it on the given image '''
 
 
-def calculate_and_map(raw_image, change, writer):
+def calculate_and_map(raw_image, change, writer, count):
     """map on the first image"""
     # image=cv2.imread(raw_image)
     MOVING_COORDINATES = []
@@ -187,13 +191,23 @@ def calculate_and_map(raw_image, change, writer):
         config.INPUT_IMAGE_SIZE = raw_image.shape[:-1][::-1]
         image = cv2.resize(raw_image, config.INPUT_IMAGE_SIZE)
     image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    furniture_obj = furniture(config.FURNITURE_NAMES, config.FURNITURE_COORDINATES)
+    furniture_coordinates = furniture_obj.getCoordinateDict()
+    for i in furniture_coordinates:
+        x = furniture_coordinates[i].get("x")
+        y = furniture_coordinates[i].get("y")
+        w = furniture_coordinates[i].get("w")
+        h = furniture_coordinates[i].get("h")
+        xC = (x+w/2)
+        yC = (y+h/2)
+        cv2.circle(image, (int(xC), int(yC)), 1, (255, 255, 255), 1)
+        cv2.rectangle(image, (x, y), (x + w, y + h),
+                      (255, 255, 255), 2)
+        cv2.putText(image, i, (x, y), cv2.FONT_HERSHEY_COMPLEX,
+                    0.5, (255, 255, 255))
 
     # table_co_x=200
     # table_co_y=250
-    count = 0
-    cv2.putText(image, "furnitures used:", (50, 50),
-                cv2.FONT_HERSHEY_SIMPLEX, (1), (255, 255, 255))
-    cv2.line(image, (50, 52), (400, 52), (255, 255, 255), 2)
 
     ''' Furniture usage COUNTER '''
 
@@ -201,20 +215,15 @@ def calculate_and_map(raw_image, change, writer):
     if len(MOVING_COORDINATES)>10:
         (coordinates_x, coordinates_y) = iterate(
             MOVING_COORDINATES)
-        filtered_array_warm = distance_calculator(coordinates_x, coordinates_y, 1, writer)
+        filtered_array_warm = distance_calculator(coordinates_x, coordinates_y, 1, writer, count)
         start_plot(filtered_array_warm, config.RED)
-    (coordinates_x, coordinates_y) = iterate(
-        STILL_COORDINATES)
-    filtered_array_cold = distance_calculator(coordinates_x, coordinates_y, 2, writer)
-    start_plot(filtered_array_cold, config.BLUE)
+        
+    if len(STILL_COORDINATES)>0:
+        (coordinates_x, coordinates_y) = iterate(
+            STILL_COORDINATES)
+        filtered_array_cold = distance_calculator(coordinates_x, coordinates_y, 2, writer, count)
+        start_plot(filtered_array_cold, config.BLUE)
 
-    ''' plot scatter plot of the persaon's positions in that pertiular time frame on the current/empty room image '''
-    ''' create furniture regions on raw_pic '''
-    '''
-    for i in config.FURNITURE_COORDINATES:
-        cv2.putText(image, "{}: {}".format(i, COUNT_TABLE[i]), (50, 80+count), cv2.FONT_HERSHEY_SIMPLEX, (1), (255, 255, 255))
-        count += 20
-    '''
     implot = plt.imshow(image)
     # plt.hist2d(coordinates_x,coordinates_y)
     plt.savefig('{}outputGraph{}.png'.format(config.OUTPUT_PATH, time.strftime(
