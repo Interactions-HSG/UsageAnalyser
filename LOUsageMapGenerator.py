@@ -10,8 +10,8 @@ from googleUpload import upload_files
 import Record
 import config
 from distanceCalc import calculate_and_map, get_serial
-
 from checkInternetConnection import connect
+
 
 def create_zip(name):
     """create zip file for the final output"""
@@ -34,10 +34,10 @@ def create_zip(name):
 def generate_map():
     """ generates scatter map and overlays on the empty room image for better analysis by the users 
      outputs found ROI coordinates and schedules the camera for reducing the battery life conservation """
-    capture1 = cv2.VideoCapture(0)
-    _, raw_image = capture1.read()
+    capture1 = cv2.VideoCapture(0) # this one is only used to have the first snapshot that will be used as comparison
+    _, raw_image = capture1.read() #raw image is a numpy array
+  
     (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
-
     if int(major_ver)  < 3 :
         fps = capture1.get(cv2.cv.CV_CAP_PROP_FPS)
        
@@ -52,22 +52,21 @@ def generate_map():
     while True:
         ''' check room brightness '''
         capture = cv2.VideoCapture(0)
-        _,sample=capture.read()
+        _,sample=capture.read()  #this one is only used to check room brightness
+       
 
         config.INPUT_IMAGE_SIZE = raw_image.shape[:-1][::-1]
         hsv = cv2.cvtColor(sample.copy(), cv2.COLOR_BGR2HSV)
         avg_color_per_row = np.average(hsv, axis=0)
         avg_color = np.average(avg_color_per_row, axis=0)
         brightness = avg_color[2]
-        
-        
+
         
         if brightness > room_default_brightness:
             capture.release()
             try:
 
                 (change,count) = Record.start_recording(time.time(), raw_image)
-                # print(coordinates)
 
                 ''' imported function for calcuating the distance of a person from the objects '''
                 f = open('{}outputTable{}.csv'.format(config.OUTPUT_PATH, time.strftime(

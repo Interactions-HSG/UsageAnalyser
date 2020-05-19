@@ -2,11 +2,16 @@
 import time
 import math
 import cv2
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
 import numpy as np
 import config
 from furniture import furniture
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+import matplotlib.patches as patches
+from matplotlib.patches import Rectangle
+from matplotlib.collections import PatchCollection
+from PIL import Image
+import io
 
 COUNTER = 0
 NUM = 0
@@ -40,7 +45,7 @@ def check_continuity(check_array, MOVING, STILL):
     
     
     for i in range(len(check_array)-1):
-        count = np.count_nonzero(check_array == check_array[i])
+        count = np.count_nonzero(check_array == check_array[i]) #gives you the count of all the unique values. check each pixel if there is a change
         if count > config.COLD_COUNT:
             STILL.append(check_array[i])
         
@@ -71,7 +76,7 @@ def check_continuity(check_array, MOVING, STILL):
                 STILL.append(temp[i])
     
     '''
-                
+    #STILL_ = [[400, 250]]            
     MOVING = np.array(MOVING)
     STILL = np.array(STILL)
   
@@ -82,6 +87,9 @@ def distance_calculator(x1, y1, usage_type, writer, count):
     """calculate the distance between the change and the furniture"""
     occupancy = 0
     filtered_array = []
+    layout_map = Image.open(r"images/61-402layout.png")
+    layout_map = np.asarray(layout_map)
+    used_furn_layout = []
 
     if len(x1) > 0:
         occupancy = 1
@@ -95,6 +103,8 @@ def distance_calculator(x1, y1, usage_type, writer, count):
         
         furniture_obj = furniture(config.FURNITURE_NAMES, config.FURNITURE_COORDINATES)
         furniture_coordinates = furniture_obj.getCoordinateDict()
+        furniture_obj_layout = furniture(config.FURNITURE_NAMES,config.FURNITURE_LAYOUT_COORDINATES)
+        furniture_layout_coordinates = furniture_obj_layout.getCoordinateDict()
         
         for i in furniture_coordinates:
             x2 = furniture_coordinates[i].get("x")
@@ -115,6 +125,18 @@ def distance_calculator(x1, y1, usage_type, writer, count):
                     value = COUNT_TABLE[i]+1
                     COUNT_TABLE.update({i: value})
                     filtered_array.append((x1[j], y1[j]))
+                   
+                    for k in furniture_layout_coordinates:
+                        if k == i:
+                            x2_ = furniture_layout_coordinates[k].get("x")
+                            y2_ = furniture_layout_coordinates[k].get("y")
+                            w_ = furniture_layout_coordinates[k].get("w")
+                            h_ = furniture_layout_coordinates[k].get("h")
+                            used_furn_layout.append((k, x2_,y2_,w_,h_,value))
+                            break
+                
+                        else:
+                            continue    
                 else:
                     continue
 
@@ -127,7 +149,8 @@ def distance_calculator(x1, y1, usage_type, writer, count):
         # print(x1,y1)
         
     filtered_array = np.array(filtered_array)
-    return filtered_array
+    used_furn_layout = np.array(used_furn_layout)
+    return filtered_array, used_furn_layout
 
 
 def newline(p1, p2, color):
@@ -173,14 +196,107 @@ def start_plot(coordinates, color):
     else:
         return False
 
+def Layiterate(coordinates):
+    """iterate over the recived coordinates"""
+    furniture_name = []
+    coordinates_x = []
+    coordinates_y = []
+    coordinates_w = []
+    coordinates_h = []
+    value = []
+
+    if(len(coordinates) > 0):
+        for i in coordinates:
+            if (len(i) == 6):
+                k = i[0]
+                x = int(i[1])
+                y = int(i[2])
+                w = int(i[3])
+                h = int(i[4])
+                value_ = int(i[5])
+
+                furniture_name.append(k)
+                coordinates_x.append(x)
+                coordinates_y.append(y)
+                coordinates_w.append(w)
+                coordinates_h.append(h)
+                value.append(value_)
+            else:
+                raise Exception("coordinates in coordinates list has less than 6 positions")
+        coordinates_x = np.array(coordinates_x)
+        coordinates_y = np.array(coordinates_y) 
+        coordinates_w = np.array(coordinates_w) 
+        coordinates_h = np.array(coordinates_h) 
+        value = np.array(value) 
+    else:
+        raise Exception('No furniture has been used')
+
+
+    return (furniture_name,coordinates_x, coordinates_y, coordinates_w, coordinates_h, value)
+
+
+def start_plot_layout(coordinates, color, layout_map):
+    (furniture_name, coordinates_x, coordinates_y, coordinates_w, coordinates_h, value) = Layiterate(coordinates)
+  #  layout_map = Image.open(r"images/61-402layout.png")
+    layout_map = np.asarray(layout_map)
+    plt.imshow(layout_map)
+    ax = plt.gca()
+    PatchesWarm = []
+    PatchesCold = []
+    #WarmPatchesHigh = []
+
+
+
+    for i in range(0, len(coordinates)):
+        x = coordinates_x[i]
+        y = coordinates_y[i]
+        w = coordinates_w[i]
+        h = coordinates_h[i]
+        k = furniture_name[i]
+        value_ = value[i]
+        xC = x+w/2
+        yC = y+h/2
+        ax.text(xC,yC,k, fontsize=7, rotation=0, multialignment="center")
+        alpha = (0.3+ (value_ // 50000))
+
+        if color == config.RED:
+            rect = Rectangle((x, y),w,h,fill=True, alpha=alpha, color=(.9, .3, .3))
+            PatchesWarm.append(rect)
+            #newline((xC, yC), (x, y), color)
+
+
+
+
+        elif color == config.BLUE:
+            rect = Rectangle((xC, yC),(w/3),(h/3),fill=True, alpha=alpha, color=(.4, .8, .9))
+            PatchesCold.append(rect)
+            #ax.plot(xC, yC, 'bo', markersize=6, color=color)
+            #newline((xC, yC), (x, y-20), color)
+
+
+      
+        else: 
+            raise Exception('Wrong color')
+
+
+    ax.add_collection(PatchCollection(PatchesWarm,match_original=True))
+    ax.add_collection(PatchCollection(PatchesCold,match_original=True))
+
+    
+    #plt.show
+    #plt.savefig('{}outputLayout{}.png'.format(config.OUTPUT_PATH, time.strftime(
+    #   '%b-%d-%Y_%H%M%S', time.localtime())), bbox_inches='tight') 
 
 ''' calculate distance between roi (extracted centroid coordinate) and objects
  plots the output as a scatter map and overlays it on the given image '''
 
 
+
 def calculate_and_map(raw_image, change, writer, count):
     """map on the first image"""
-    # image=cv2.imread(raw_image)
+    #raw_image = Image.open(r"images/61-402layout.png")
+    raw_image = Image.open(r"images/inputNew.png")
+    raw_image = np.asarray(raw_image)
     MOVING_COORDINATES = []
     STILL_COORDINATES = []
     if hasattr(raw_image, 'shape'):
@@ -190,42 +306,27 @@ def calculate_and_map(raw_image, change, writer, count):
         raw_image = cv2.imread(raw_image)
         config.INPUT_IMAGE_SIZE = raw_image.shape[:-1][::-1]
         image = cv2.resize(raw_image, config.INPUT_IMAGE_SIZE)
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    furniture_obj = furniture(config.FURNITURE_NAMES, config.FURNITURE_COORDINATES)
-    furniture_coordinates = furniture_obj.getCoordinateDict()
-    for i in furniture_coordinates:
-        x = furniture_coordinates[i].get("x")
-        y = furniture_coordinates[i].get("y")
-        w = furniture_coordinates[i].get("w")
-        h = furniture_coordinates[i].get("h")
-        xC = (x+w/2)
-        yC = (y+h/2)
-        cv2.circle(image, (int(xC), int(yC)), 1, (255, 255, 255), 1)
-        cv2.rectangle(image, (x, y), (x + w, y + h),
-                      (255, 255, 255), 2)
-        cv2.putText(image, i, (x, y), cv2.FONT_HERSHEY_COMPLEX,
-                    0.5, (255, 255, 255))
-
-    # table_co_x=200
-    # table_co_y=250
-
-    ''' Furniture usage COUNTER '''
+   
 
     (MOVING_COORDINATES, STILL_COORDINATES) = check_continuity(change, MOVING_COORDINATES, STILL_COORDINATES)
     if len(MOVING_COORDINATES)>10:
         (coordinates_x, coordinates_y) = iterate(
             MOVING_COORDINATES)
-        filtered_array_warm = distance_calculator(coordinates_x, coordinates_y, 1, writer, count)
-        start_plot(filtered_array_warm, config.RED)
-        
+        filtered_array_warm, used_furn_layout_warm = distance_calculator(coordinates_x, coordinates_y, 1, writer, count)
+       # start_plot(filtered_array_warm, config.RED)
+        start_plot_layout(used_furn_layout_warm,config.RED, raw_image)
+
+       
     if len(STILL_COORDINATES)>0:
         (coordinates_x, coordinates_y) = iterate(
             STILL_COORDINATES)
-        filtered_array_cold = distance_calculator(coordinates_x, coordinates_y, 2, writer, count)
-        start_plot(filtered_array_cold, config.BLUE)
+        filtered_array_cold, used_furn_layout_cold = distance_calculator(coordinates_x, coordinates_y, 2, writer, count)
+       # start_plot(filtered_array_cold, config.BLUE)
+        #used_furn_layout_cold = [["Chair", "150", "130", "50", "50","1"]]
+        start_plot_layout(used_furn_layout_cold,config.BLUE, raw_image)
 
     implot = plt.imshow(image)
-    # plt.hist2d(coordinates_x,coordinates_y)
+
     plt.savefig('{}outputGraph{}.png'.format(config.OUTPUT_PATH, time.strftime(
         '%b-%d-%Y_%H%M%S', time.localtime())), bbox_inches='tight')
     # plt.show()

@@ -1,0 +1,16 @@
+# add output, add test data.zip, requirements! Compare with Sanjivs pushs
+#anything you dont want in github can be written here
+.pytest_cache/
+.pytest_cache
+test_data.zip
+.vscode/
+.vscode
+__pycache__/
+__pycache__ 
+Test.csv
+.output/
+output
+.input/
+input
+./images
+images

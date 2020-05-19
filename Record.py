@@ -6,6 +6,7 @@ import imutils
 import numpy as np
 import config
 
+
   
 CHANGE_COORDINATES = []
 
@@ -70,6 +71,13 @@ def change_detection(fimage, first_image):
 
 def start_recording(start_time, base_image=None):
     '''save image and video on a given time interval, returns ROI coordinates'''
+    """from here...
+    
+    1. Capture a video in a numpy data frame (to have the same format as base image)
+    2. Use CV2 to get ww and hw and fourcc
+    3. line 98. Replace video.read with first frame
+    
+    """
     room_status = 0
     CHANGE_COORDINATES.clear()
     t = time.localtime()
@@ -82,7 +90,7 @@ def start_recording(start_time, base_image=None):
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     starttimestamp = time.strftime('%b-%d-%Y_%H%M%S', t)
     out = cv2.VideoWriter('{}OutputVideo{}.avi'.format(config.OUTPUT_PATH, starttimestamp), fourcc, 34, (int(ww), int(hw)))
-    
+    """ to here must be changed to picamera code. Then on line 91 we have to instead of video.read use cv2 compatible picode"""
     if base_image is not None:
         first_frame=base_image
     else:
