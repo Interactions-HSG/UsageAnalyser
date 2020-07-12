@@ -7,7 +7,9 @@ RAW_IMAGE_PATH = r'images/61-402layout.png'
 
 WINDOW_SIZE = (8, 8)
 
-IMAGE_RESOLUTION = (720, 1080)
+#IMAGE_RESOLUTION = (1280, 720)
+IMAGE_RESOLUTION = (640, 480)
+
 
 FACECLASSIFIER_ADDRESS = HOME + \
     r'/downloads/opencv-3.4/data/haarcascades/haarcascade_frontalface_default.xml'
@@ -15,17 +17,20 @@ FACECLASSIFIER_ADDRESS = HOME + \
 to run on raspberry pi uncomment the line below 'saved opencv-3.4.0 folder inside the local folder'
 '''
 #FACECLASSIFIER_ADDRESS= r'opencv-3.4.0/data/haarcascades/haarcascade_frontalface_default.xml'
-CAPTURE_DURATION = int(3600*3)
+CAPTURE_DURATION = int(3600*20)
 SLEEP_DURATION = 900
-COLD_COUNT=10
+COLD_COUNT=1000
 
-FPS=1
+FPS=32
 
 OUTPUT_PATH = r'output/'
 INPUT_PATH = r'input/'
 
+MAX_DISAPPEARED = 50
+
 DEFAULT_DISTANCE = 20
-CHANGE_THRESHOLD = 62
+#Changed CHANGE_THRESHOLD from 62 to 
+CHANGE_THRESHOLD = 40
 CHANGE_DISTANCE_MIN = 50
 CHANGE_DISTANCE_MAX = 150
 
@@ -34,7 +39,9 @@ MODEL_FILE = r'tflite_models/detect.tflite'
 LABEL_PATH = r'tflite_models/person-labelmap.txt'
 
 INPUT_IMAGE_SIZE = (640, 480)
-BLURR_SIZE = (31, 31)
+#BLURR_SIZE = (5, 5)
+BLURR_SIZE = (5, 5)
+
 
 ROOM_BRIGHTNESS_THRESHOLD = 50
 
@@ -114,6 +121,9 @@ YELLOW = 'y'
 BLACK = 'k'
 WHITE = 'w'
 
-GOOGLE_DRIVE_UPLOAD_ALLOWED = 0
+GOOGLE_DRIVE_UPLOAD_ALLOWED = 1
 
 TEST_MODE= 0
+
+HOST_ADDRESS = '0.0.0.0'
+PORT = 5000

@@ -46,6 +46,15 @@ pip install --upgrade google-api-python-client
 
 pip install google-auth-oauthlib
 
+pip3 install pyqrcode
+
+pip3 install pypng
+
+
+sudo apt-get install python3-flask
+
+
+
 
 Make sure you have created a google project and added the credentials.json file in the root folder of the project to recieve files in your Google Drive 
 

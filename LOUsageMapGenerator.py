@@ -7,11 +7,17 @@ import os
 import cv2
 import numpy as np
 from googleUpload import upload_files
+from googleUpload import get_file
 import Record
 import config
+import requests
+import webserver
+import threading
+
 from distanceCalc import calculate_and_map, get_serial
 from checkInternetConnection import connect
-
+from picamera.array import PiRGBArray
+from picamera import PiCamera
 
 def create_zip(name):
     """create zip file for the final output"""
@@ -30,67 +36,82 @@ def create_zip(name):
         print(e)
         logging.debug(e)
 
+def create_base_image():
+    """Take a first frame that will be used as groundtruth to compare subsequent frames and return the frame"""
+    camera = PiCamera()
+
+    camera.resolution = config.IMAGE_RESOLUTION
+    camera.framerate = config.FPS
+    time.sleep(2)
+        
+    with PiRGBArray(camera) as output:
+        camera.capture(output, format='bgr')
+        raw_image = output.array
+            
+            #print('Captured %dx%d image' % (
+            #        output.array.shape[1], output.array.shape[0]))
+            
+        output.truncate(0)
+        camera.close()
+    camera.close()
+    return raw_image
 
 def generate_map():
     """ generates scatter map and overlays on the empty room image for better analysis by the users 
      outputs found ROI coordinates and schedules the camera for reducing the battery life conservation """
-    capture1 = cv2.VideoCapture(0) # this one is only used to have the first snapshot that will be used as comparison
-    _, raw_image = capture1.read() #raw image is a numpy array
-  
-    (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
-    if int(major_ver)  < 3 :
-        fps = capture1.get(cv2.cv.CV_CAP_PROP_FPS)
-       
-    else :
-        fps = capture1.get(cv2.CAP_PROP_FPS)
-        
-    config.FPS=fps
-    logging.info("Start FPS: {}".format(fps))
-    capture1.release()
+    
+    raw_image = create_base_image()
     room_default_brightness = config.ROOM_BRIGHTNESS_THRESHOLD
     
     while True:
         ''' check room brightness '''
-        capture = cv2.VideoCapture(0)
-        _,sample=capture.read()  #this one is only used to check room brightness
-       
 
         config.INPUT_IMAGE_SIZE = raw_image.shape[:-1][::-1]
-        hsv = cv2.cvtColor(sample.copy(), cv2.COLOR_BGR2HSV)
+        hsv = cv2.cvtColor(raw_image.copy(), cv2.COLOR_BGR2HSV)
         avg_color_per_row = np.average(hsv, axis=0)
         avg_color = np.average(avg_color_per_row, axis=0)
         brightness = avg_color[2]
 
         
         if brightness > room_default_brightness:
-            capture.release()
-            try:
-
+            #capture.release()
+            try:  
                 (change,count) = Record.start_recording(time.time(), raw_image)
-
                 ''' imported function for calcuating the distance of a person from the objects '''
                 f = open('{}outputTable{}.csv'.format(config.OUTPUT_PATH, time.strftime(
                     '%b-%d-%Y_%H%M%S', time.localtime())), "w")
                 writer = csv.DictWriter(f, fieldnames=[
-                    "Timestamp", "Furniture_Type", "Usage_Count", "Total_Checks", "Usage_Percentage", "Usage_Type", "Room_Occupancy", "Device_ID"])
+                    "Timestamp", "Furniture_Type", "Usage_Count", "Total_Checks", "Usage_Percentage", "Usage_Type", "Room_Occupancy", "Usage amount", "Device_ID"])
                 writer.writeheader()
                 
                 calculate_and_map(raw_image, change, writer, count)
                 f.close()
 
                 if(config.GOOGLE_DRIVE_UPLOAD_ALLOWED == 1 and connect() == True):
+                    serial = get_serial()
+                    time_ = time.strftime(
+                        '%b-%d-%Y_%H%M%S', time.localtime())
+                    name = serial+time_
+                    
                     time.sleep(2)
                     create_zip('{}newRecording{}'.format(
-                        config.OUTPUT_PATH, get_serial()))
-                    file_meta_data = {'name': 'newRecording{}'.format(get_serial()), 'time': time.strftime(
+                        config.OUTPUT_PATH, name))
+                    file_meta_data = {'name': 'newRecording{}'.format(name), 'time': time.strftime(
                         '%b-%d-%Y_%H%M%S', time.localtime())}
                     results = upload_files('{}newRecording{}'.format(
-                        config.OUTPUT_PATH, get_serial()), file_meta_data)
+                        config.OUTPUT_PATH, name), file_meta_data)
+                    print("results are",results)
                     print('File uploaded ID: {}'.format(results.get('id')))
                     logging.info(
                         'Files uploaded ID: {}'.format(results.get('id')))
+                    
+                  
+                    
+                    
                 elif(connect() == False):
                     logging.info("Output files are being stored on local device because system is not connected to the internet!")
+                    
+                
 
             except Exception as e:
                 print(e)
@@ -105,7 +126,7 @@ def generate_map():
                 break
 
         else:
-            capture.release()
+            #capture.release()
             print('The room is too dark for a photo!')
             logging.info('The room is too dark for a photo {}!'.format(
                 time.strftime('%b-%d-%Y_%H%M%S', time.localtime())))
@@ -119,14 +140,24 @@ def generate_map():
         # capture.release()
         cv2.destroyAllWindows()
 
-
 def main():
     """main function"""
+    
     logging.basicConfig(filename='{}LOWatch.log'.format(
         config.OUTPUT_PATH),format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
     datefmt='%Y-%m-%d:%H:%M:%S', level=logging.DEBUG)
-    generate_map()
+    
+    # start a thread that will perform motion detection
+    t = threading.Thread(target=generate_map, args=())
+    t.daemon = True
+    t.start()
 
+
+
+
+
+    webserver.main()
+    
 
 if __name__ == "__main__":
     main()
