@@ -19,6 +19,21 @@ from checkInternetConnection import connect
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 
+def adapt_blur(raw_image):
+    """Check blur level of the raw image and adapt the additional internal level depending on blur level of the raw image"""
+    BLUR_LEVEL=cv2.Laplacian(raw_image, cv2.CV_64F).var()
+    print(BLUR_LEVEL)
+    try:
+        if BLUR_LEVEL > 15:
+            config.BLURR_SIZE = (3,3)
+        elif (BLUR_LEVEL > 9) and (BLUR_LEVEL < 15):
+            config.BLURR_SIZE = (3,3)
+        elif BLUR_LEVEL < 9:
+            config.BLURR_SIZE = (5,5)
+    except Exception as e:
+            print(e)
+            raise Exception(e)
+
 def create_zip(name):
     """create zip file for the final output"""
     def filter(name): return '.zip' in name or '.DS_Store' in name
@@ -61,6 +76,7 @@ def generate_map():
      outputs found ROI coordinates and schedules the camera for reducing the battery life conservation """
     
     raw_image = create_base_image()
+    adapt_blur(raw_image)
     room_default_brightness = config.ROOM_BRIGHTNESS_THRESHOLD
     
     while True:
