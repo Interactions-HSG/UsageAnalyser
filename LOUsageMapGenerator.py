@@ -32,9 +32,8 @@ def adapt_blur(raw_image):
             config.BLURR_SIZE = (5,5)
     except Exception as e:
             print(e)
-            logging.debug(e)
             raise Exception(e)
-        
+
 def create_zip(name):
     """create zip file for the final output"""
     def filter(name): return '.zip' in name or '.DS_Store' in name
