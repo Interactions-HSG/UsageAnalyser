@@ -66,19 +66,7 @@ def check_continuity(check_array, MOVING, STILL):
     for i in range(len(temp)-1):
         count = np.count_nonzero(temp == temp[i])
         if count > config.COLD_COUNT:
-            STILL.append(temp[i])
-        
-    
-    '''   
-    if len(temp)>0:
-        for i in range(len(temp)-1):
-            temp = np.array(temp)
-            count = np.count_nonzero(temp == temp[i])
-            if count > config.COLD_COUNT:
-                STILL.append(temp[i])
-    
-    '''
-    #STILL_ = [[400, 250]]            
+            STILL.append(temp[i])           
     MOVING = np.array(MOVING)
     STILL = np.array(STILL)
   
@@ -105,8 +93,6 @@ def distance_calculator(x1, y1, usage_type, writer, count):
         
         furniture_obj = furniture(config.FURNITURE_NAMES, config.FURNITURE_COORDINATES)
         furniture_coordinates = furniture_obj.getCoordinateDict()
-        #furniture_obj_layout = furniture(config.FURNITURE_NAMES,config.FURNITURE_LAYOUT_COORDINATES)
-        #furniture_layout_coordinates = furniture_obj_layout.getCoordinateDict()
         
         for i in furniture_coordinates:
             
@@ -150,19 +136,19 @@ def distance_calculator(x1, y1, usage_type, writer, count):
                         {"Timestamp": time.strftime('%b-%d-%Y_%H%M%S', time.localtime()), "Furniture_Type": i, "Usage_Count": COUNT_TABLE[i],"Total_Checks":count,"Usage_Percentage": round((COUNT_TABLE[i] / count)*100,2), "Usage_Type": Usage_Type, "Room_Occupancy": config.OCCUPANCY.get(occupancy), "Usage amount": NUMBER_,  "Device_ID": get_serial()})
             except Exception as e:
                 print(e)
+                logging.debug(e)
             NUMBER_PPL = 0
             ct.delete()
     except Exception as e:
         print(e)
         return False
-        # print(x1,y1)
         
     filtered_array = np.array(filtered_array)
     return filtered_array
 
 
-def iterate(coordinates):
-    """iterate over the recived coordinates"""
+def iterate_coordinates(coordinates):
+    """iterate over the change coordinates and return x and y coordinates per change"""
 
     coordinates_x = []
     coordinates_y = []
@@ -182,7 +168,7 @@ def iterate(coordinates):
 
 def start_plot(coordinates, color):
     """plot the line on graph"""
-    (coordinates_x, coordinates_y) = iterate(coordinates)
+    (coordinates_x, coordinates_y) = iterate_coordinates(coordinates)
     if color == config.BLUE:
         plt.plot(coordinates_x, coordinates_y, 'ro', markersize=6, color=color)
         
@@ -199,7 +185,7 @@ def start_plot(coordinates, color):
 
 
 def plot_layout(color, layout_map):
-    ''' Plots for each furniture the usage on the layout image with different color intensity depending on the usage amount and returns the layout image  '''
+    ''' Plots for each furniture the usage on the layout image with different color intensity'''
 
     layout_map = np.asarray(layout_map)
     plt.imshow(layout_map)
@@ -215,7 +201,6 @@ def plot_layout(color, layout_map):
         
         if value_ > 0:
             
-            print(k, "value isch",value_)
             x = furniture_layout_coordinates[k].get("x")
             y = furniture_layout_coordinates[k].get("y")
             w = furniture_layout_coordinates[k].get("w")
@@ -253,7 +238,7 @@ def plot_layout(color, layout_map):
         
 
 def calculate_and_map(raw_image, change, writer, count):
-    """map on the first image"""
+    """Calculate the used furnitures and draw used furnitures on the outputGraph"""
     #raw_image = Image.open(r"images/61-402layout.png")
     raw_image = Image.open(r"images/inputNew.png")
     raw_image = np.asarray(raw_image)
@@ -270,14 +255,14 @@ def calculate_and_map(raw_image, change, writer, count):
 
     (MOVING_COORDINATES, STILL_COORDINATES) = check_continuity(change, MOVING_COORDINATES, STILL_COORDINATES)
     if len(MOVING_COORDINATES)>10:
-        (coordinates_x, coordinates_y) = iterate(
+        (coordinates_x, coordinates_y) = iterate_coordinates(
             MOVING_COORDINATES)
         filtered_array_warm = distance_calculator(coordinates_x, coordinates_y, 1, writer, count)
         plot_layout(config.RED, raw_image)
 
        
     if len(STILL_COORDINATES)>0:
-        (coordinates_x, coordinates_y) = iterate(
+        (coordinates_x, coordinates_y) = iterate_coordinates(
             STILL_COORDINATES)
         filtered_array_cold= distance_calculator(coordinates_x, coordinates_y, 2, writer, count)
         plot_layout(config.BLUE, raw_image)

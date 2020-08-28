@@ -38,37 +38,8 @@ def main():
     service = build('drive', 'v3', credentials=creds)
     return service
 
-
-def list_files():
-    service = main()
-    results = service.files().list(
-        pageSize=10, fields="nextPageToken, files(id, name)").execute()
-    items = results.get('files', [])
-
-    if not items:
-        print('No files found.')
-    else:
-        print('Files:')
-        for item in items:
-            print(u'{0} ({1})'.format(item['name'], item['id']))
-        return items
-
-
-def get_file(file_id):
-    service = main()
-    file = service.files().get(fileId=file_id).execute()
-    
-    print(file)
-    """
-    for file in response.get('files', []):
-        # Process change
-        print 'Found file: %s (%s)' % (file.get('name'), file.get('id'))
-    page_token = response.get('nextPageToken', None)
-    if page_token is None:
-        break
-    """
-
 def upload_files(file, fileMetaData):
+    """ Upload the files to googleDrive"""
     service = main()
     file_metadata = fileMetaData
     media = MediaFileUpload(
@@ -77,38 +48,3 @@ def upload_files(file, fileMetaData):
         body=file_metadata, media_body=media, fields='properties, id').execute()
     return results
 
-
-"""
-def callback(request_id, response, exception, ):
-    
-    file_id = file_id
-
-    if exception:
-        # Handle error
-        print exception
-    else:
-        print "Permission Id: %s" % response.get('id')
-
-batch = drive_service.new_batch_http_request(callback=callback)
-user_permission = {
-    'type': 'user',
-    'role': 'writer',
-    'emailAddress': 'user@example.com'
-}
-batch.add(drive_service.permissions().create(
-        fileId=file_id,
-        body=user_permission,
-        fields='id',
-))
-domain_permission = {
-    'type': 'domain',
-    'role': 'reader',
-    'domain': 'example.com'
-}
-batch.add(drive_service.permissions().create(
-        fileId=file_id,
-        body=domain_permission,
-        fields='id',
-))
-batch.execute()
-"""

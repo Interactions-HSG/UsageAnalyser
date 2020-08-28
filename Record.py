@@ -16,28 +16,7 @@ StreamFrame = None
 COUNT = None
 BLUR_LEVEL = None
 
-def y_correction(image):
-    #The following code extracts the Y channel, apply the histm equalization and convert it back to RGB
-    YUV= cv2.cvtColor(image,cv2.COLOR_BGR2YUV)
-    YUV[:,:,0]=cv2.equalizeHist(YUV[:,:,0])
-    # convert the YUV image back to RGB format
-    image = cv2.cvtColor(YUV, cv2.COLOR_YUV2BGR)
-    return image
 
-def illumination_correction(image):
-    RGB = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)#convert to RGB
-    R,G,B = cv2.split(RGB)
-
-    #Create a CLAHE object: The image is divided into small block 8x8 which they are equalized as usual.
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-    #Applying this method to each channel of the color image
-    output_2R = clahe.apply(R)
-    output_2G = clahe.apply(G)
-    output_2B = clahe.apply(B)
-
-    #mergin each channel back to one
-    image = cv2.merge((output_2R,output_2G,output_2B))
-    return image
 
 def stream_frame():
     """capture and return the most recent frame"""
@@ -48,7 +27,7 @@ def stream_frame():
         raise Exception("No frames  currently available")
 
 def change_detection(fimage, first_image):
-    ''' detect the chamges in the frame and return the change array'''
+    ''' detect the changes in the frame and return the change array'''
     status = 0
     change_co = []
     trackers_co = []
@@ -63,35 +42,22 @@ def change_detection(fimage, first_image):
     frame = cv2.resize(fimage, config.INPUT_IMAGE_SIZE)
     
 
-    """
-    contrast = frame.std()
-    contrastback = background_model_resized.std()
-    brightness = calculate_brightness(frame, background_model_resized)
     
-    cl1_frame = illumination_correction(gray_frame)
-    cl1_background = illumination_correction(gray_background)
-    
-    background_model_resized = apply_brightness_contrast(background_model_resized, brightness, contrast)
-    #cl1_frame = adjust_gamma(gray_frame, gamma=gamma)
-    #cl1_background = adjust_gamma(gray_background, gamma=gamma)
-    """
-    # perform histogram equalization using CLAHE on each pixel channel
 
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     gray_background = cv2.cvtColor(background_model_resized, cv2.COLOR_BGR2GRAY)
     
   
-    
-    
+    # perform histogram equalization using CLAHE on each pixel channel
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
     cl1_frame = clahe.apply(gray_frame)
     cl1_background = clahe.apply(gray_background)
     
-    """
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (25,25))
+    
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5))
     cl1_frame = cv2.morphologyEx(gray_frame, cv2.MORPH_OPEN, kernel, iterations=3)
     cl1_background = cv2.morphologyEx(gray_background, cv2.MORPH_OPEN, kernel, iterations=3)
-    """
+    
     
     cl1_background = np.float32(cl1_background)
 
@@ -104,7 +70,7 @@ def change_detection(fimage, first_image):
     #frame_delta = cv2.absdiff(cl1_background, cl1_frame)
         
     blur = cv2.GaussianBlur(frame_delta, (5, 5), 0)
-    thresh = cv2.threshold(blur, config.CHANGE_THRESHOLD,255, cv2.THRESH_BINARY)[1]
+    thresh = cv2.threshold(blur, config.CHANGE_THRESHOLD,config.CHANGE_THRESHOLD_MAX, cv2.THRESH_BINARY)[1]
     
     #thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
 
@@ -220,7 +186,7 @@ def start_recording(start_time, base_image=None):
                        break
                   
 
-    
+    out.release()
     cv2.imwrite('{}outputPicture{}.png'.format(config.OUTPUT_PATH, starttimestamp), framedetect)
     #camera.stop_recording()
     camera.close()
