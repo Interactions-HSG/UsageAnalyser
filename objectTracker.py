@@ -73,9 +73,9 @@ class CentroidTracker():
                         if distance_ > distance:
                             distance_ = distance
                             objectID_ = objectID
-                        if distance_ > 20:
-                            self.register(inputCentroids)
-                        elif distance_ < 20:
-                            self.objects[objectID_] = inputCentroids      
+                    if distance_ > 20:
+                        self.register(inputCentroids)
+                    elif distance_ < 20:
+                        self.objects[objectID_] = inputCentroids      
         return (self.objects)
         #return self.objects
