@@ -7,6 +7,7 @@ import matplotlib.lines as mlines
 import numpy as np
 import config
 from furniture import furniture
+import socket
 
 COUNTER = 0
 NUM = 0
@@ -119,7 +120,7 @@ def distance_calculator(x1, y1, usage_type, writer, count):
                     continue
 
             writer.writerow(
-                {"Timestamp": time.strftime('%b-%d-%Y_%H%M%S', time.localtime()), "Furniture_Type": i, "Usage_Count": COUNT_TABLE[i],"Total_Checks":count,"Usage_Percentage": round((COUNT_TABLE[i] / count)*100,2), "Usage_Type": config.USAGE.get(usage_type), "Room_Occupancy": config.OCCUPANCY.get(occupancy), "Device_ID": get_serial()})
+                {"Timestamp": time.strftime('%b-%d-%Y_%H%M%S', time.localtime()), "Furniture_Type": i, "Usage_Count": COUNT_TABLE[i],"Total_Checks":count,"Usage_Percentage": round((COUNT_TABLE[i] / count)*100,2), "Usage_Type": config.USAGE.get(usage_type), "Room_Occupancy": config.OCCUPANCY.get(occupancy), "Device_ID": socket.gethostname()})
         
     except Exception as e:
         print(e)
@@ -181,6 +182,8 @@ def start_plot(coordinates, color):
 def calculate_and_map(raw_image, change, writer, count):
     """map on the first image"""
     # image=cv2.imread(raw_image)
+    #raw_image = Image.open(r"outputPictureSep-28-2020_114735.png")
+    #raw_image = np.asarray(raw_image)
     MOVING_COORDINATES = []
     STILL_COORDINATES = []
     if hasattr(raw_image, 'shape'):
