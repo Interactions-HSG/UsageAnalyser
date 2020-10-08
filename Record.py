@@ -77,6 +77,7 @@ def start_recording(start_time, base_image=None):
         video = cv2.VideoCapture('input/input.avi')
     else:
         video = cv2.VideoCapture(0)
+        time.sleep(2)
     ww = video.get(cv2.CAP_PROP_FRAME_WIDTH)
     hw = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')

@@ -10,6 +10,7 @@ from googleUpload import upload_files
 import Record
 import config
 from distanceCalc import calculate_and_map, get_serial
+import socket
 
 from checkInternetConnection import connect
 
@@ -35,23 +36,25 @@ def generate_map():
     """ generates scatter map and overlays on the empty room image for better analysis by the users 
      outputs found ROI coordinates and schedules the camera for reducing the battery life conservation """
     capture1 = cv2.VideoCapture(0)
+    time.sleep(2)
     _, raw_image = capture1.read()
     (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
-
     if int(major_ver)  < 3 :
         fps = capture1.get(cv2.cv.CV_CAP_PROP_FPS)
        
     else :
         fps = capture1.get(cv2.CAP_PROP_FPS)
-        
+    
+    cv2.imwrite('{}raw.png'.format(config.OUTPUT_PATH),raw_image)
     config.FPS=fps
-    logging.info("Start FPS: {}".format(fps))
+    #logging.info("Start FPS: {}".format(fps))
     capture1.release()
-    room_default_brightness = config.ROOM_BRIGHTNESS_THRESHOLD
+   
     
     while True:
         ''' check room brightness '''
         capture = cv2.VideoCapture(0)
+        time.sleep(2)
         _,sample=capture.read()
 
         config.INPUT_IMAGE_SIZE = raw_image.shape[:-1][::-1]
@@ -61,8 +64,7 @@ def generate_map():
         brightness = avg_color[2]
         
         
-        
-        if brightness > room_default_brightness:
+        if brightness > config.ROOM_BRIGHTNESS_THRESHOLD:
             capture.release()
             try:
 
@@ -82,7 +84,7 @@ def generate_map():
                 if(config.GOOGLE_DRIVE_UPLOAD_ALLOWED == 1 and connect() == True):
                     time.sleep(2)
                     create_zip('{}newRecording{}'.format(
-                        config.OUTPUT_PATH, get_serial()))
+                        config.OUTPUT_PATH, socket.gethostname()))
                     file_meta_data = {'name': 'newRecording{}'.format(get_serial()), 'time': time.strftime(
                         '%b-%d-%Y_%H%M%S', time.localtime())}
                     results = upload_files('{}newRecording{}'.format(
@@ -95,7 +97,7 @@ def generate_map():
 
             except Exception as e:
                 print(e)
-                logging.debug(e)
+                logging.error(e)
 
             if config.TEST_MODE == 1:
                 logging.info(
@@ -126,6 +128,8 @@ def main():
     logging.basicConfig(filename='{}LOWatch.log'.format(
         config.OUTPUT_PATH),format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
     datefmt='%Y-%m-%d:%H:%M:%S', level=logging.DEBUG)
+    logging.getLogger('matplotlib.font_manager').disabled = True
+    
     generate_map()
 
 

@@ -9,6 +9,7 @@ import config
 from furniture import furniture
 import socket
 
+
 COUNTER = 0
 NUM = 0
 
@@ -193,7 +194,7 @@ def calculate_and_map(raw_image, change, writer, count):
         raw_image = cv2.imread(raw_image)
         config.INPUT_IMAGE_SIZE = raw_image.shape[:-1][::-1]
         image = cv2.resize(raw_image, config.INPUT_IMAGE_SIZE)
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    #image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     furniture_obj = furniture(config.FURNITURE_NAMES, config.FURNITURE_COORDINATES)
     furniture_coordinates = furniture_obj.getCoordinateDict()
     for i in furniture_coordinates:
@@ -226,10 +227,11 @@ def calculate_and_map(raw_image, change, writer, count):
             STILL_COORDINATES)
         filtered_array_cold = distance_calculator(coordinates_x, coordinates_y, 2, writer, count)
         start_plot(filtered_array_cold, config.BLUE)
-
+    
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     implot = plt.imshow(image)
     # plt.hist2d(coordinates_x,coordinates_y)
     plt.savefig('{}outputGraph{}.png'.format(config.OUTPUT_PATH, time.strftime(
-        '%b-%d-%Y_%H%M%S', time.localtime())), bbox_inches='tight')
+        '%b-%d-%Y_%H%M%S', time.localtime())))
     # plt.show()
     plt.close('all')
