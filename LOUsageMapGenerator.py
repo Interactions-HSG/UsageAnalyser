@@ -45,7 +45,7 @@ def generate_map():
     else :
         fps = capture1.get(cv2.CAP_PROP_FPS)
     
-    cv2.imwrite('{}raw.png'.format(config.OUTPUT_PATH),raw_image)
+    #cv2.imwrite('{}raw.png'.format(config.OUTPUT_PATH),raw_image)
     config.FPS=fps
     #logging.info("Start FPS: {}".format(fps))
     capture1.release()
