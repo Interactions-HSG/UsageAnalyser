@@ -91,7 +91,7 @@ def change_detection(fimage, first_image):
 
 ''' original
 def change_detection(fimage, first_image):
-    ''' detect the chamges in the frame and return the change array'''
+    """ detect the chamges in the frame and return the change array"""
     status = 0
     change_co = []
     if hasattr(fimage, 'shape'):
