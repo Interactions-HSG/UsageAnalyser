@@ -85,10 +85,10 @@ def generate_map():
                     time.sleep(2)
                     create_zip('{}newRecording{}'.format(
                         config.OUTPUT_PATH, socket.gethostname()))
-                    file_meta_data = {'name': 'newRecording{}'.format(get_serial()), 'time': time.strftime(
+                    file_meta_data = {'name': 'newRecording{}'.format(socket.gethostname()), 'time': time.strftime(
                         '%b-%d-%Y_%H%M%S', time.localtime())}
                     results = upload_files('{}newRecording{}'.format(
-                        config.OUTPUT_PATH, get_serial()), file_meta_data)
+                        config.OUTPUT_PATH, socket.gethostname()), file_meta_data)
                     print('File uploaded ID: {}'.format(results.get('id')))
                     logging.info(
                         'Files uploaded ID: {}'.format(results.get('id')))
