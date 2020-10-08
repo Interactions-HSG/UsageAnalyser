@@ -34,7 +34,7 @@ def create_zip(name):
 def adapt_blur(raw_image):
     """Check blur level of the raw image and adapt the additional internal level depending on blur level of the raw image"""
     BLUR_LEVEL=cv2.Laplacian(raw_image, cv2.CV_64F).var()
-    print(BLUR_LEVEL)
+    #print(BLUR_LEVEL)
     try:
         if BLUR_LEVEL > 15:
             config.BLURR_SIZE = (3,3)
@@ -45,7 +45,7 @@ def adapt_blur(raw_image):
     except Exception as e:
             print(e)
             raise Exception(e)
-    print(config.BLURR_SIZE)
+    #print(config.BLURR_SIZE)
     
 def generate_map():
     """ generates scatter map and overlays on the empty room image for better analysis by the users 
