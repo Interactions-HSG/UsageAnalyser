@@ -11,83 +11,83 @@ CHANGE_COORDINATES = []
 
 def change_detection(fimage, first_image):
     ''' detect the changes in the frame and return the change array'''
-        status = 0
-        change_co = []
-        trackers_co = []
+    status = 0
+    change_co = []
+    trackers_co = []
 
-        if hasattr(fimage, 'shape'):
-            config.INPUT_IMAGE_SIZE = fimage.shape[:-1][::-1]
-        else:
-            fimage = cv2.imread(fimage)
-            config.INPUT_IMAGE_SIZE = fimage.shape[:-1][::-1]
-            first_image = cv2.imread(first_image)
-        background_model_resized = cv2.resize(first_image, config.INPUT_IMAGE_SIZE)
-        frame = cv2.resize(fimage, config.INPUT_IMAGE_SIZE)
-        
-        frame = cv2.fastNlMeansDenoisingColored(frame, None, 10, 10, 7, 15)
-        background_model_resized = cv2.fastNlMeansDenoisingColored(background_model_resized, None, 10, 10, 7, 15)
-        
-
-        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gray_background = cv2.cvtColor(background_model_resized, cv2.COLOR_BGR2GRAY)
-        
+    if hasattr(fimage, 'shape'):
+        config.INPUT_IMAGE_SIZE = fimage.shape[:-1][::-1]
+    else:
+        fimage = cv2.imread(fimage)
+        config.INPUT_IMAGE_SIZE = fimage.shape[:-1][::-1]
+        first_image = cv2.imread(first_image)
+    background_model_resized = cv2.resize(first_image, config.INPUT_IMAGE_SIZE)
+    frame = cv2.resize(fimage, config.INPUT_IMAGE_SIZE)
     
-        # perform histogram equalization using CLAHE on each pixel channel
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-        cl1_frame = clahe.apply(gray_frame)
-        cl1_background = clahe.apply(gray_background)
+    frame = cv2.fastNlMeansDenoisingColored(frame, None, 10, 10, 7, 15)
+    background_model_resized = cv2.fastNlMeansDenoisingColored(background_model_resized, None, 10, 10, 7, 15)
+    
+
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray_background = cv2.cvtColor(background_model_resized, cv2.COLOR_BGR2GRAY)
+    
+
+    # perform histogram equalization using CLAHE on each pixel channel
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    cl1_frame = clahe.apply(gray_frame)
+    cl1_background = clahe.apply(gray_background)
+    
+
+    
+    
+    """
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10,10))
+    cl1_frame = cv2.morphologyEx(gray_frame, cv2.MORPH_OPEN, kernel, iterations=3)
+    cl1_background = cv2.morphologyEx(gray_background, cv2.MORPH_OPEN, kernel, iterations=3)
+    """
+    
+    
+    cl1_background = np.float32(cl1_background)
+
+    cv2.accumulateWeighted(cl1_frame, cl1_background, 0.1)
+    
+    # get pixel-wise differences between current frame and avg. frame
+    
+    frame_delta = cv2.absdiff(cl1_frame, cv2.convertScaleAbs(cl1_background))
+    
+    #frame_delta = cv2.absdiff(cl1_background, cl1_frame)
         
+    blur = cv2.GaussianBlur(frame_delta, (5, 5), 0)
+    thresh = cv2.threshold(blur, config.CHANGE_THRESHOLD,config.CHANGE_THRESHOLD_MAX, cv2.THRESH_BINARY)[1]
+    
+    #thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
 
+    thresh = cv2.dilate(thresh, None, iterations=3)
+    
+    cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
+                            cv2.CHAIN_APPROX_SIMPLE)
+    cnts = imutils.grab_contours(cnts)
+
+    for c in cnts:
+
+        (x, y, w, h) = cv2.boundingRect(c)
+
+        if ((w < config.CHANGE_DISTANCE_MIN and h < config.CHANGE_DISTANCE_MIN)or(w > config.CHANGE_DISTANCE_MAX and h > config.CHANGE_DISTANCE_MAX)):
+            continue
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+        status = 1
+
+        M = cv2.moments(c)
+        xC = int((M["m10"] / M["m00"]))
+        yC = int((M["m01"] / M["m00"]))
         
-        
-        """
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10,10))
-        cl1_frame = cv2.morphologyEx(gray_frame, cv2.MORPH_OPEN, kernel, iterations=3)
-        cl1_background = cv2.morphologyEx(gray_background, cv2.MORPH_OPEN, kernel, iterations=3)
-        """
-        
-        
-        cl1_background = np.float32(cl1_background)
-
-        cv2.accumulateWeighted(cl1_frame, cl1_background, 0.1)
-        
-        # get pixel-wise differences between current frame and avg. frame
-        
-        frame_delta = cv2.absdiff(cl1_frame, cv2.convertScaleAbs(cl1_background))
-        
-        #frame_delta = cv2.absdiff(cl1_background, cl1_frame)
-            
-        blur = cv2.GaussianBlur(frame_delta, (5, 5), 0)
-        thresh = cv2.threshold(blur, config.CHANGE_THRESHOLD,config.CHANGE_THRESHOLD_MAX, cv2.THRESH_BINARY)[1]
-        
-        #thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-
-        thresh = cv2.dilate(thresh, None, iterations=3)
-        
-        cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-                                cv2.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
-
-        for c in cnts:
-
-            (x, y, w, h) = cv2.boundingRect(c)
-
-            if ((w < config.CHANGE_DISTANCE_MIN and h < config.CHANGE_DISTANCE_MIN)or(w > config.CHANGE_DISTANCE_MAX and h > config.CHANGE_DISTANCE_MAX)):
-                continue
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
-            status = 1
-
-            M = cv2.moments(c)
-            xC = int((M["m10"] / M["m00"]))
-            yC = int((M["m01"] / M["m00"]))
-            
-            CHANGE_COORDINATES.append([xC, yC])
-            change_co = np.array(CHANGE_COORDINATES)
+        CHANGE_COORDINATES.append([xC, yC])
+        change_co = np.array(CHANGE_COORDINATES)
 
 
 
-        return (frame, change_co, status)
+    return (frame, change_co, status)
 
 ''' original
 def change_detection(fimage, first_image):
