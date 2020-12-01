@@ -1,4 +1,4 @@
-## Usage analyzer
+# Usage analyzer
 Occupancy and usage monitor for a defined area of interest in Python using openCV. 
 
 ## Dependencies
@@ -23,6 +23,7 @@ for macos:
 - zipp==0.6.0
 
 for Raspberry PI:
+
 (Execute the below mentioned commands)
 
 First install python3 and check the accessibility then using pip3 or pip,
@@ -31,13 +32,7 @@ pip3 install opencv-python
 
 sudo apt-get install libjasper-dev
 
-sudo apt install libqtgui4
-
 sudo apt-get install libqt4-test
-
-sudo apt-get install libhdf5-serial-dev
-
-sudo apt-get install libhdf5-dev
 
 sudo apt-get install libatlas-base-dev
 

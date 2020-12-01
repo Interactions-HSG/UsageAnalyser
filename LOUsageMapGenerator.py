@@ -1,3 +1,4 @@
+'''Start file and Output file generators'''
 import time
 import zipfile
 import logging
@@ -9,7 +10,9 @@ from googleUpload import upload_files
 import Record
 import config
 from distanceCalc import calculate_and_map, get_serial
-from furniture import furniture
+import socket
+
+from checkInternetConnection import connect
 
 def create_zip(name):
     """create zip file for the final output"""
@@ -28,77 +31,94 @@ def create_zip(name):
         print(e)
         logging.debug(e)
 
-
+def adapt_blur(raw_image):
+    """Check blur level of the raw image and adapt the additional internal level depending on blur level of the raw image"""
+    BLUR_LEVEL=cv2.Laplacian(raw_image, cv2.CV_64F).var()
+    #print(BLUR_LEVEL)
+    try:
+        if BLUR_LEVEL > 15:
+            config.BLURR_SIZE = (3,3)
+        elif (BLUR_LEVEL > 9) and (BLUR_LEVEL < 15):
+            config.BLURR_SIZE = (1,1)
+        elif BLUR_LEVEL < 9:
+            config.BLURR_SIZE = (5,5)
+    except Exception as e:
+            print(e)
+            raise Exception(e)
+    #print(config.BLURR_SIZE)
+    
 def generate_map():
     """ generates scatter map and overlays on the empty room image for better analysis by the users 
      outputs found ROI coordinates and schedules the camera for reducing the battery life conservation """
-
+    capture1 = cv2.VideoCapture(0)
+    time.sleep(2)
+    _, raw_image = capture1.read()
+    (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
+    if int(major_ver)  < 3 :
+        fps = capture1.get(cv2.cv.CV_CAP_PROP_FPS)
+       
+    else :
+        fps = capture1.get(cv2.CAP_PROP_FPS)
+    
+    #cv2.imwrite('{}raw.png'.format(config.OUTPUT_PATH),raw_image)
+    config.FPS=fps
+    #logging.info("Start FPS: {}".format(fps))
+    capture1.release()
+    
+    adapt_blur(raw_image)
+   
+    
     while True:
         ''' check room brightness '''
-
-        room_default_brightness = config.ROOM_BRIGHTNESS_THRESHOLD
         capture = cv2.VideoCapture(0)
-        _, raw_image = capture.read()
-
-        furniture_obj = furniture(config.FURNITURE_NAMES, config.FURNITURE_COORDINATES)
-        furniture_coordinates = furniture_obj.getCoordinateDict()
-        
-        for i in furniture_coordinates:
-            x = furniture_coordinates[i].get("x")
-            y = furniture_coordinates[i].get("y")
-            w = furniture_coordinates[i].get("w")
-            h = furniture_coordinates[i].get("h")
-            xC = (x+w/2)
-            yC = (y+h/2)
-            cv2.circle(raw_image, (int(xC), int(yC)), 1, (255, 255, 255), 1)
-            cv2.rectangle(raw_image, (x, y), (x + w, y + h),
-                          (255, 255, 255), 2)
-            cv2.putText(raw_image, i, (x, y), cv2.FONT_HERSHEY_COMPLEX,
-                        0.5, (255, 255, 255))
+        time.sleep(2)
+        _,sample=capture.read()
 
         config.INPUT_IMAGE_SIZE = raw_image.shape[:-1][::-1]
-        hsv = cv2.cvtColor(raw_image, cv2.COLOR_BGR2HSV)
+        hsv = cv2.cvtColor(sample.copy(), cv2.COLOR_BGR2HSV)
         avg_color_per_row = np.average(hsv, axis=0)
         avg_color = np.average(avg_color_per_row, axis=0)
         brightness = avg_color[2]
-        raw_image_RGB = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
-
-        if brightness > room_default_brightness:
+        
+        
+        if brightness > config.ROOM_BRIGHTNESS_THRESHOLD:
             capture.release()
             try:
 
-                change = Record.start_recording(time.time(), raw_image)
+                (change,count) = Record.start_recording(time.time(), raw_image)
                 # print(coordinates)
 
                 ''' imported function for calcuating the distance of a person from the objects '''
                 f = open('{}outputTable{}.csv'.format(config.OUTPUT_PATH, time.strftime(
                     '%b-%d-%Y_%H%M%S', time.localtime())), "w")
                 writer = csv.DictWriter(f, fieldnames=[
-                    "Timestamp", "Furniture_Type", "Usage_Count", "Usage_Type", "Room_Occupancy", "Device_ID"])
+                    "Timestamp", "Furniture_Type", "Usage_Count", "Total_Checks", "Usage_Percentage", "Usage_Type", "Room_Occupancy", "Device_ID"])
                 writer.writeheader()
-                calculate_and_map(raw_image_RGB, change, writer)
+                
+                calculate_and_map(raw_image, change, writer, count)
                 f.close()
 
-                if(config.GOOGLE_DRIVE_UPLOAD_ALLOWED == 1):
-
+                if(config.GOOGLE_DRIVE_UPLOAD_ALLOWED == 1 and connect() == True):
                     time.sleep(2)
                     create_zip('{}newRecording{}'.format(
-                        config.OUTPUT_PATH, get_serial()))
-                    file_meta_data = {'name': 'newRecording{}'.format(get_serial()), 'time': time.strftime(
+                        config.OUTPUT_PATH, socket.gethostname()))
+                    file_meta_data = {'name': 'newRecording{}'.format(socket.gethostname()), 'time': time.strftime(
                         '%b-%d-%Y_%H%M%S', time.localtime())}
                     results = upload_files('{}newRecording{}'.format(
-                        config.OUTPUT_PATH, get_serial()), file_meta_data)
+                        config.OUTPUT_PATH, socket.gethostname()), file_meta_data)
                     print('File uploaded ID: {}'.format(results.get('id')))
                     logging.info(
                         'Files uploaded ID: {}'.format(results.get('id')))
+                elif(connect() == False):
+                    logging.info("Output files are being stored on local device because system is not connected to the internet!")
 
             except Exception as e:
                 print(e)
-                logging.debug(e)
+                logging.error(e)
 
             if config.TEST_MODE == 1:
                 logging.info(
-                    'testing!!! please set testMode to 0 in configuration file for full mode...')
+                    'Testing! please set testMode to 0 in configuration file for full mode...')
                 break
             
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -123,9 +143,13 @@ def generate_map():
 def main():
     """main function"""
     logging.basicConfig(filename='{}LOWatch.log'.format(
-        config.OUTPUT_PATH), level=logging.DEBUG)
+        config.OUTPUT_PATH),format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
+    datefmt='%Y-%m-%d:%H:%M:%S', level=logging.DEBUG)
+    logging.getLogger('matplotlib.font_manager').disabled = True
+    
     generate_map()
 
 
 if __name__ == "__main__":
     main()
+
