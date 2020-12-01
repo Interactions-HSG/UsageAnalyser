@@ -3,7 +3,7 @@ Occupancy and usage monitor for a defined area of interest in Python using openC
 
 ## Dependencies
 
-#for macos:
+for macos:
 (Use requirement.txt to install updated list)
 
 - google-api-python-client==1.7.11
@@ -22,7 +22,7 @@ Occupancy and usage monitor for a defined area of interest in Python using openC
 - QtPy==1.9.0
 - zipp==0.6.0
 
-#for Raspberry PI:
+for Raspberry PI:
 (Execute the below mentioned commands)
 
 First install python3 and check the accessibility then using pip3 or pip,
