@@ -9,7 +9,7 @@ matplotlib==3.1.2
 numpy==1.22.0
 oauthlib==3.1.0
 opencv-contrib-python==4.4.0.44
-opencv-python==4.4.0.44
+opencv-python==4.8.1.78
 PyQt5==5.12.3
 pytest==5.3.2
 QtPy==1.9.0
